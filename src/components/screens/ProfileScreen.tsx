@@ -1,0 +1,85 @@
+import { Building2, FileText, BarChart3, CreditCard, Globe, Palette, ShieldCheck, ChevronRight } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+
+const ProfileScreen = () => {
+  return (
+    <div className="space-y-5 p-4">
+      <h1 className="text-xl font-bold">My Profile</h1>
+
+      {/* Company Card */}
+      <div className="wireframe-card flex items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+          <Building2 className="h-6 w-6 text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-bold">PT Hijau Lestari</p>
+          <p className="text-xs text-muted-foreground">Agriculture · Palm Oil · West Java</p>
+        </div>
+      </div>
+
+      {/* Compliance Progress */}
+      <div className="wireframe-card space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Compliance Progress</h3>
+          <span className="text-sm font-bold text-primary">65%</span>
+        </div>
+        <Progress value={65} className="h-2.5" />
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="rounded-lg bg-accent p-2.5 text-center">
+            <p className="font-bold text-accent-foreground">3</p>
+            <p className="text-muted-foreground">Completed</p>
+          </div>
+          <div className="rounded-lg bg-muted p-2.5 text-center">
+            <p className="font-bold">5</p>
+            <p className="text-muted-foreground">Remaining</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Menu Items */}
+      <div className="space-y-1">
+        {[
+          { icon: FileText, label: "Saved Documents", desc: "3 documents" },
+          { icon: BarChart3, label: "Readiness Reports", desc: "2 reports" },
+          { icon: CreditCard, label: "Subscription Plan", desc: "Basic · Rp 150K/mo" },
+          { icon: Globe, label: "Language Preference", desc: "Bahasa Indonesia" },
+          { icon: Palette, label: "Cultural Settings", desc: "Region: ID" },
+        ].map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <button key={i} className="flex w-full items-center gap-3 rounded-lg p-3 text-left hover:bg-muted transition-colors">
+              <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
+              <div className="flex-1">
+                <p className="text-sm font-medium">{item.label}</p>
+                <p className="text-xs text-muted-foreground">{item.desc}</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Partner Logos */}
+      <div className="wireframe-card text-center">
+        <p className="text-xs font-medium text-muted-foreground mb-3">Institutional Partners</p>
+        <div className="flex items-center justify-center gap-4">
+          {["University A", "Trade Bureau", "EU Chamber"].map((p) => (
+            <div key={p} className="flex h-10 items-center justify-center rounded border border-border px-3">
+              <span className="text-xs text-muted-foreground">{p}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Verification */}
+      <div className="flex justify-center pb-4">
+        <div className="trust-badge">
+          <ShieldCheck className="h-3.5 w-3.5" />
+          Verified SME · Certified Exporter
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProfileScreen;
