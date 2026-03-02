@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 interface ScanData {
@@ -72,6 +73,7 @@ const TOTAL_STEPS = 4;
 
 const ReadinessScanScreen = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"scan" | "reports">("scan");
   const [currentStep, setCurrentStep] = useState(0); // 0 = intro, 1-4 = steps
   const [data, setData] = useState<ScanData>(initialData);
@@ -131,6 +133,7 @@ const ReadinessScanScreen = () => {
       const { data: scan, error: insertError } = await supabase
         .from("scans")
         .insert({
+          user_id: user!.id,
           company_name: data.companyName,
           sector: data.sector,
           company_size: data.companySize,
