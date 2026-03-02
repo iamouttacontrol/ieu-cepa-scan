@@ -1,5 +1,6 @@
-import { Play, ChevronRight, CheckSquare, ArrowRight, Filter } from "lucide-react";
+import { Play, ChevronRight, CheckSquare, ArrowRight, Filter, Clock } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 const modules = [
   { id: 1, title: "What is the Digital Product Passport?", duration: "3 min", tag: "Beginner", topic: "Documentation" },
@@ -31,6 +32,10 @@ const LearningScreen = () => {
               <Play className="h-6 w-6 text-primary ml-1" />
             </div>
             <p className="text-sm font-medium">{selectedModule.duration} video</p>
+            <div className="flex items-center gap-1.5 rounded-full bg-accent px-3 py-1">
+              <Clock className="h-3 w-3 text-accent-foreground" />
+              <span className="text-xs font-medium text-accent-foreground">Coming Soon</span>
+            </div>
           </div>
         </div>
 
@@ -55,17 +60,31 @@ const LearningScreen = () => {
 
         {/* Action buttons */}
         <div className="space-y-2.5">
-          <button className="flex w-full items-center justify-between rounded-lg bg-primary py-3 px-4 text-sm font-semibold text-primary-foreground">
+          <button
+            onClick={() => toast.success("Action steps feature coming soon!")}
+            className="flex w-full items-center justify-between rounded-lg bg-primary py-3 px-4 text-sm font-semibold text-primary-foreground"
+          >
             <span>Translate into Action Steps</span>
             <ArrowRight className="h-4 w-4" />
           </button>
-          <button className="flex w-full items-center justify-between rounded-lg border-2 border-primary py-3 px-4 text-sm font-semibold text-primary">
+          <button
+            onClick={() => toast.success("Added to your checklist!")}
+            className="flex w-full items-center justify-between rounded-lg border-2 border-primary py-3 px-4 text-sm font-semibold text-primary"
+          >
             <span className="flex items-center gap-2">
               <CheckSquare className="h-4 w-4" />
               Add to My Checklist
             </span>
           </button>
-          <button className="flex w-full items-center justify-center gap-2 rounded-lg bg-muted py-3 text-sm font-medium text-foreground">
+          <button
+            onClick={() => {
+              const currentIndex = modules.findIndex((m) => m.id === selectedModule.id);
+              const next = modules[(currentIndex + 1) % modules.length];
+              setSelectedModule(next);
+              toast.info(`Opening: ${next.title}`);
+            }}
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-muted py-3 text-sm font-medium text-foreground"
+          >
             Next 3-Min Module
             <ChevronRight className="h-4 w-4" />
           </button>

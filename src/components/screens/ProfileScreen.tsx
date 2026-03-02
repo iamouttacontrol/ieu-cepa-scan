@@ -1,7 +1,20 @@
-import { Building2, FileText, BarChart3, CreditCard, Globe, Palette, ShieldCheck, ChevronRight } from "lucide-react";
+import { Building2, FileText, BarChart3, CreditCard, Globe, Palette, ShieldCheck, ChevronRight, Clock } from "lucide-react";
+import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { toast } from "sonner";
+
+const menuItems = [
+  { icon: FileText, label: "Saved Documents", desc: "3 documents", detail: "Access your uploaded business registration, product certifications, and export licenses. Full document management is coming soon." },
+  { icon: BarChart3, label: "Readiness Reports", desc: "2 reports", detail: "View your previous IEU-CEPA readiness scan reports. Report comparison and trend tracking are coming soon." },
+  { icon: CreditCard, label: "Subscription Plan", desc: "Basic · Rp 150K/mo", detail: "You're on the Basic plan. Premium features including unlimited scans, priority expert access, and advanced analytics are coming soon." },
+  { icon: Globe, label: "Language Preference", desc: "Bahasa Indonesia", detail: "Multi-language support with full Bahasa Indonesia and English localization is coming soon." },
+  { icon: Palette, label: "Cultural Settings", desc: "Region: ID", detail: "Customize regional settings including date formats, currency display, and regulatory jurisdiction preferences. Coming soon." },
+];
 
 const ProfileScreen = () => {
+  const [selectedItem, setSelectedItem] = useState<typeof menuItems[0] | null>(null);
+
   return (
     <div className="space-y-5 p-4">
       <h1 className="text-xl font-bold">My Profile</h1>
@@ -38,16 +51,14 @@ const ProfileScreen = () => {
 
       {/* Menu Items */}
       <div className="space-y-1">
-        {[
-          { icon: FileText, label: "Saved Documents", desc: "3 documents" },
-          { icon: BarChart3, label: "Readiness Reports", desc: "2 reports" },
-          { icon: CreditCard, label: "Subscription Plan", desc: "Basic · Rp 150K/mo" },
-          { icon: Globe, label: "Language Preference", desc: "Bahasa Indonesia" },
-          { icon: Palette, label: "Cultural Settings", desc: "Region: ID" },
-        ].map((item, i) => {
+        {menuItems.map((item, i) => {
           const Icon = item.icon;
           return (
-            <button key={i} className="flex w-full items-center gap-3 rounded-lg p-3 text-left hover:bg-muted transition-colors">
+            <button
+              key={i}
+              onClick={() => setSelectedItem(item)}
+              className="flex w-full items-center gap-3 rounded-lg p-3 text-left hover:bg-muted transition-colors"
+            >
               <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
               <div className="flex-1">
                 <p className="text-sm font-medium">{item.label}</p>
@@ -78,6 +89,34 @@ const ProfileScreen = () => {
           Verified SME · Certified Exporter
         </div>
       </div>
+
+      {/* Detail Sheet */}
+      <Sheet open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              {selectedItem && <selectedItem.icon className="h-5 w-5 text-primary" />}
+              {selectedItem?.label}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-xs text-muted-foreground">{selectedItem?.desc}</p>
+            <div className="flex items-start gap-3 rounded-lg bg-info/50 p-3">
+              <Clock className="h-5 w-5 shrink-0 text-primary mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Coming Soon</p>
+                <p className="text-xs text-muted-foreground">{selectedItem?.detail}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => { setSelectedItem(null); toast.success("You'll be notified when this feature launches!"); }}
+              className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground"
+            >
+              Notify Me When Available
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

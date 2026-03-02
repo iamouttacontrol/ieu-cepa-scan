@@ -259,10 +259,36 @@ const ReadinessScanScreen = () => {
         )}
 
         <div className="flex gap-3">
-          <button className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground">
+          <button
+            onClick={() => {
+              const reportText = `IEU-CEPA READINESS REPORT\n========================\nCompany: ${data.companyName || "N/A"}\nSector: ${data.sector}\nProduct: ${data.productType || "N/A"}\nTarget: ${data.targetCountry}\nScore: ${score}%\nRisk: ${risk_level}\n\nMissing Requirements:\n${missing_requirements.map(r => `- ${r.name}: ${r.description}`).join("\n")}\n\nCompleted:\n${completed_requirements.map(r => `- ${r.name}: ${r.description}`).join("\n")}\n\nAction Plan:\n${action_plan.map((a, i) => `${i+1}. [${a.priority}] ${a.title} - ${a.description} (${a.effort})`).join("\n")}`;
+              const blob = new Blob([reportText], { type: "text/plain" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `IEU-CEPA-Report-${data.companyName || "scan"}.txt`;
+              a.click();
+              URL.revokeObjectURL(url);
+              toast.success("Report downloaded!");
+            }}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground"
+          >
             <Download className="h-4 w-4" /> Download Report
           </button>
-          <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-input bg-background py-3 text-sm font-semibold">
+          <button
+            onClick={async () => {
+              const shareText = `IEU-CEPA Readiness Score: ${score}% for ${data.companyName || "my company"}. Risk level: ${risk_level}. ${missing_requirements.length} areas need attention.`;
+              if (navigator.share) {
+                try {
+                  await navigator.share({ title: "IEU-CEPA Readiness Report", text: shareText });
+                } catch { /* user cancelled */ }
+              } else {
+                await navigator.clipboard.writeText(shareText);
+                toast.success("Report summary copied to clipboard!");
+              }
+            }}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-input bg-background py-3 text-sm font-semibold"
+          >
             <Users className="h-4 w-4" /> Share with Consultant
           </button>
         </div>
