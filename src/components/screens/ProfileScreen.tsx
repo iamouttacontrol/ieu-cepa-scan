@@ -1,7 +1,6 @@
-import { Building2, FileText, BarChart3, CreditCard, Globe, Palette, ShieldCheck, ChevronRight, Clock } from "lucide-react";
+import { Building2, FileText, BarChart3, CreditCard, Globe, Palette, ShieldCheck, ChevronRight, Clock, X } from "lucide-react";
 import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
 const menuItems = [
@@ -90,33 +89,40 @@ const ProfileScreen = () => {
         </div>
       </div>
 
-      {/* Detail Sheet */}
-      <Sheet open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
-        <SheetContent side="bottom" className="rounded-t-2xl">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              {selectedItem && <selectedItem.icon className="h-5 w-5 text-primary" />}
-              {selectedItem?.label}
-            </SheetTitle>
-          </SheetHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-xs text-muted-foreground">{selectedItem?.desc}</p>
+      {/* Detail Modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 z-50" onClick={() => setSelectedItem(null)}>
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="absolute bottom-0 left-0 right-0 mx-auto max-w-lg rounded-t-2xl bg-background p-6 shadow-xl animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-lg font-semibold">
+                <selectedItem.icon className="h-5 w-5 text-primary" />
+                {selectedItem.label}
+              </h3>
+              <button onClick={() => setSelectedItem(null)} className="rounded-full p-1 hover:bg-muted">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">{selectedItem.desc}</p>
             <div className="flex items-start gap-3 rounded-lg bg-info/50 p-3">
               <Clock className="h-5 w-5 shrink-0 text-primary mt-0.5" />
               <div>
                 <p className="text-sm font-medium">Coming Soon</p>
-                <p className="text-xs text-muted-foreground">{selectedItem?.detail}</p>
+                <p className="text-xs text-muted-foreground">{selectedItem.detail}</p>
               </div>
             </div>
             <button
               onClick={() => { setSelectedItem(null); toast.success("You'll be notified when this feature launches!"); }}
-              className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground"
+              className="mt-4 w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground"
             >
               Notify Me When Available
             </button>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      )}
     </div>
   );
 };

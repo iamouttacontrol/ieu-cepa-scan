@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 
 interface DashboardScreenProps {
@@ -138,35 +137,38 @@ const DashboardScreen = ({ onNavigate }: DashboardScreenProps) => {
         </div>
       </div>
 
-      {/* Notifications Sheet */}
-      <Sheet open={showNotifications} onOpenChange={setShowNotifications}>
-        <SheetContent side="right" className="w-full max-w-md p-0">
-          <SheetHeader className="border-b border-border px-4 py-4">
-            <SheetTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" />
-              Notifications
-            </SheetTitle>
-          </SheetHeader>
-          <div className="divide-y divide-border">
-            {notifications.map((n) => (
-              <div key={n.id} className={`px-4 py-4 ${n.unread ? "bg-accent/30" : ""}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold">{n.title}</p>
-                      {n.unread && (
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
-                      )}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">{n.desc}</p>
-                    <p className="mt-1.5 text-[10px] text-muted-foreground">{n.time}</p>
+      {/* Notifications Panel */}
+      {showNotifications && (
+        <div className="fixed inset-0 z-50" onClick={() => setShowNotifications(false)}>
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="absolute right-0 top-0 h-full w-full max-w-md bg-background shadow-xl animate-in slide-in-from-right duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border px-4 py-4">
+              <h3 className="flex items-center gap-2 text-lg font-semibold">
+                <Bell className="h-5 w-5 text-primary" />
+                Notifications
+              </h3>
+              <button onClick={() => setShowNotifications(false)} className="rounded-full p-1 hover:bg-muted">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="divide-y divide-border overflow-y-auto" style={{ maxHeight: "calc(100vh - 64px)" }}>
+              {notifications.map((n) => (
+                <div key={n.id} className={`px-4 py-4 ${n.unread ? "bg-accent/30" : ""}`}>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold">{n.title}</p>
+                    {n.unread && <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />}
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{n.desc}</p>
+                  <p className="mt-1.5 text-[10px] text-muted-foreground">{n.time}</p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      )}
     </div>
   );
 };
