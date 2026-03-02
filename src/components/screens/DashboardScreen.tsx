@@ -1,4 +1,4 @@
-import { ClipboardCheck, ListChecks, GraduationCap, Users, UserCheck, MessageCircle, Sparkles } from "lucide-react";
+import { ClipboardCheck, ListChecks, GraduationCap, Users, UserCheck, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const DashboardScreen = () => {

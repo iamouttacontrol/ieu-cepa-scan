@@ -1,9 +1,35 @@
-import { User, Building2, MapPin, Factory, CheckCircle2, Globe, Bell, HelpCircle, Shield, LogOut, ChevronRight, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { User, MapPin, Factory, CheckCircle2, Globe, Bell, HelpCircle, Shield, LogOut, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const ProfileScreen = () => {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [scanCount, setScanCount] = useState(0);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      if (!user) return;
+      const { count } = await supabase
+        .from("scans")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "completed");
+      setScanCount(count ?? 0);
+    };
+    loadStats();
+  }, [user]);
+
+  const handleLogout = async () => {
+    setShowLogoutConfirm(false);
+    await signOut();
+    toast.success("Logged out successfully");
+    navigate("/auth");
+  };
 
   return (
     <div className="space-y-5 p-4">
@@ -14,7 +40,7 @@ const ProfileScreen = () => {
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted">
           <User className="h-10 w-10 text-muted-foreground" />
         </div>
-        <h2 className="mt-3 text-base font-bold">PT Nusantara Exports</h2>
+        <h2 className="mt-3 text-base font-bold">{user?.email ?? "User"}</h2>
         <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
           <MapPin className="h-3 w-3" /> Jakarta, Indonesia
         </div>
@@ -50,7 +76,10 @@ const ProfileScreen = () => {
             </div>
           ))}
         </div>
-        <button className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground">
+        <button
+          onClick={() => toast.info("Upgrade coming soon!")}
+          className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground"
+        >
           Upgrade to Pro
         </button>
       </div>
@@ -58,7 +87,7 @@ const ProfileScreen = () => {
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Scans Completed", value: "3" },
+          { label: "Scans Completed", value: String(scanCount) },
           { label: "Action Items", value: "5" },
           { label: "Learning Progress", value: "33%" },
         ].map((stat, i) => (
@@ -134,7 +163,7 @@ const ProfileScreen = () => {
                 Cancel
               </button>
               <button
-                onClick={() => { setShowLogoutConfirm(false); toast.success("Logged out successfully"); }}
+                onClick={handleLogout}
                 className="flex-1 rounded-lg bg-destructive py-2.5 text-sm font-semibold text-destructive-foreground"
               >
                 Logout
