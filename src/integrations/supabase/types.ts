@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      scans: {
+        Row: {
+          action_plan: Json | null
+          company_name: string
+          company_size: string
+          completed_requirements: Json | null
+          compliance_ce: boolean
+          compliance_dpp: boolean
+          compliance_esg: boolean
+          compliance_eudr: boolean
+          compliance_food_safety: boolean
+          compliance_origin: boolean
+          created_at: string
+          export_experience: string
+          hs_code: string | null
+          id: string
+          missing_requirements: Json | null
+          product_type: string
+          region: string
+          risk_description: string | null
+          risk_level: string | null
+          score: number | null
+          sector: string
+          status: string
+          target_country: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          action_plan?: Json | null
+          company_name?: string
+          company_size?: string
+          completed_requirements?: Json | null
+          compliance_ce?: boolean
+          compliance_dpp?: boolean
+          compliance_esg?: boolean
+          compliance_eudr?: boolean
+          compliance_food_safety?: boolean
+          compliance_origin?: boolean
+          created_at?: string
+          export_experience?: string
+          hs_code?: string | null
+          id?: string
+          missing_requirements?: Json | null
+          product_type?: string
+          region?: string
+          risk_description?: string | null
+          risk_level?: string | null
+          score?: number | null
+          sector?: string
+          status?: string
+          target_country?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          action_plan?: Json | null
+          company_name?: string
+          company_size?: string
+          completed_requirements?: Json | null
+          compliance_ce?: boolean
+          compliance_dpp?: boolean
+          compliance_esg?: boolean
+          compliance_eudr?: boolean
+          compliance_food_safety?: boolean
+          compliance_origin?: boolean
+          created_at?: string
+          export_experience?: string
+          hs_code?: string | null
+          id?: string
+          missing_requirements?: Json | null
+          product_type?: string
+          region?: string
+          risk_description?: string | null
+          risk_level?: string | null
+          score?: number | null
+          sector?: string
+          status?: string
+          target_country?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

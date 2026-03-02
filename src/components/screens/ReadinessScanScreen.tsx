@@ -2,6 +2,8 @@ import { Upload, ChevronRight, ChevronLeft, ShieldCheck, AlertTriangle, CheckCir
 import { useState, useEffect } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ScanData {
   companyName: string;
@@ -23,6 +25,27 @@ interface ScanData {
   uploadedFiles: string[];
 }
 
+interface Requirement {
+  name: string;
+  description: string;
+}
+
+interface ActionItem {
+  title: string;
+  description: string;
+  effort: string;
+  priority: "High" | "Medium" | "Low";
+}
+
+interface ScanResults {
+  score: number;
+  missing_requirements: Requirement[];
+  completed_requirements: Requirement[];
+  risk_level: string;
+  risk_description: string;
+  action_plan: ActionItem[];
+}
+
 const initialData: ScanData = {
   companyName: "",
   sector: "Agriculture & Food",
@@ -42,7 +65,7 @@ const ReadinessScanScreen = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [data, setData] = useState<ScanData>(initialData);
   const [analyzing, setAnalyzing] = useState(false);
-  const [showResults, setShowResults] = useState(false);
+  const [results, setResults] = useState<ScanResults | null>(null);
 
   const progressPercent = (currentStep / TOTAL_STEPS) * 100;
 
@@ -50,8 +73,7 @@ const ReadinessScanScreen = () => {
     if (currentStep < TOTAL_STEPS) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Start analysis
-      setAnalyzing(true);
+      runAnalysis();
     }
   };
 
@@ -59,20 +81,62 @@ const ReadinessScanScreen = () => {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
-  useEffect(() => {
-    if (analyzing) {
-      const timer = setTimeout(() => {
-        setAnalyzing(false);
-        setShowResults(true);
-      }, 2500);
-      return () => clearTimeout(timer);
+  const runAnalysis = async () => {
+    setAnalyzing(true);
+    try {
+      // 1. Insert scan into database
+      const { data: scan, error: insertError } = await supabase
+        .from("scans")
+        .insert({
+          company_name: data.companyName,
+          sector: data.sector,
+          company_size: data.companySize,
+          region: data.region,
+          product_type: data.productType,
+          hs_code: data.hsCode,
+          target_country: data.targetCountry,
+          export_experience: data.exportExperience,
+          compliance_dpp: data.complianceChecks.dpp,
+          compliance_eudr: data.complianceChecks.eudr,
+          compliance_ce: data.complianceChecks.ce,
+          compliance_esg: data.complianceChecks.esg,
+          compliance_origin: data.complianceChecks.origin,
+          compliance_food_safety: data.complianceChecks.foodSafety,
+          status: "analyzing",
+        })
+        .select()
+        .single();
+
+      if (insertError || !scan) throw insertError || new Error("Failed to create scan");
+
+      // 2. Call AI analysis edge function
+      const { data: analysisData, error: fnError } = await supabase.functions.invoke("analyze-readiness", {
+        body: { scanId: scan.id },
+      });
+
+      if (fnError) throw fnError;
+      if (analysisData?.error) throw new Error(analysisData.error);
+
+      setResults({
+        score: analysisData.score,
+        missing_requirements: analysisData.missing_requirements,
+        completed_requirements: analysisData.completed_requirements,
+        risk_level: analysisData.risk_level,
+        risk_description: analysisData.risk_description,
+        action_plan: analysisData.action_plan,
+      });
+    } catch (err: any) {
+      console.error("Analysis failed:", err);
+      toast.error(err?.message || "Analysis failed. Please try again.");
+    } finally {
+      setAnalyzing(false);
     }
-  }, [analyzing]);
+  };
 
   const handleRestart = () => {
     setCurrentStep(1);
     setData(initialData);
-    setShowResults(false);
+    setResults(null);
     setAnalyzing(false);
   };
 
@@ -101,7 +165,7 @@ const ReadinessScanScreen = () => {
       <div className="flex flex-col items-center justify-center gap-6 p-8 pt-24">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
         <h2 className="text-lg font-bold text-center">Analyzing your IEU-CEPA readiness…</h2>
-        <p className="text-sm text-muted-foreground text-center">Reviewing your compliance data against EU trade requirements</p>
+        <p className="text-sm text-muted-foreground text-center">Our AI is reviewing your compliance data against EU trade requirements</p>
         <div className="trust-badge">
           <ShieldCheck className="h-3.5 w-3.5" />
           AI-assisted · Human-validated framework
@@ -111,8 +175,8 @@ const ReadinessScanScreen = () => {
   }
 
   // --- RESULTS DASHBOARD ---
-  if (showResults) {
-    const score = 72;
+  if (results) {
+    const { score, missing_requirements, completed_requirements, risk_level, risk_description, action_plan } = results;
     const scoreColor = score >= 75 ? "text-success" : score >= 50 ? "text-warning" : "text-destructive";
     const scoreBorder = score >= 75 ? "border-success" : score >= 50 ? "border-warning" : "border-destructive";
 
@@ -124,83 +188,75 @@ const ReadinessScanScreen = () => {
         {/* Score */}
         <div className="wireframe-card flex flex-col items-center py-8">
           <div className={`relative flex h-32 w-32 items-center justify-center rounded-full border-8 ${scoreBorder}/30`}>
-            <div className={`absolute inset-1 flex items-center justify-center rounded-full border-4 border-t-current border-r-current border-b-transparent border-l-transparent rotate-45 ${scoreColor}`} />
             <span className={`text-3xl font-bold ${scoreColor}`}>{score}%</span>
           </div>
           <p className="mt-3 text-sm font-medium">IEU-CEPA Readiness Score</p>
-          <p className="text-xs text-muted-foreground">Based on your profile & self-assessment</p>
+          <p className="text-xs text-muted-foreground">AI-generated assessment based on your inputs</p>
         </div>
 
-        {/* Gap Analysis */}
-        <div className="wireframe-card space-y-3">
-          <h3 className="text-sm font-semibold">Missing Requirements</h3>
-          {[
-            { name: "Digital Product Passport", desc: "Required under EU Green Deal for product traceability" },
-            { name: "EUDR Due Diligence Report", desc: "Mandatory for forest-risk commodities entering the EU" },
-            { name: "CE Marking Documentation", desc: "Needed for certain product categories sold in the EU" },
-          ].map((item) => (
-            <div key={item.name} className="flex items-start gap-2 text-sm">
-              <AlertTriangle className="h-4 w-4 shrink-0 text-warning mt-0.5" />
-              <div>
-                <span className="font-medium">{item.name}</span>
-                <p className="text-xs text-muted-foreground">{item.desc}</p>
+        {/* Missing Requirements */}
+        {missing_requirements.length > 0 && (
+          <div className="wireframe-card space-y-3">
+            <h3 className="text-sm font-semibold">Missing Requirements</h3>
+            {missing_requirements.map((item, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-warning mt-0.5" />
+                <div>
+                  <span className="font-medium">{item.name}</span>
+                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        <div className="wireframe-card space-y-3">
-          <h3 className="text-sm font-semibold">Completed</h3>
-          {[
-            { name: "Business Registration", desc: "Company is properly registered and verified" },
-            { name: "Product Classification", desc: "HS Code and product type have been identified" },
-          ].map((item) => (
-            <div key={item.name} className="flex items-start gap-2 text-sm">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-success mt-0.5" />
-              <div>
-                <span className="font-medium">{item.name}</span>
-                <p className="text-xs text-muted-foreground">{item.desc}</p>
+        {/* Completed */}
+        {completed_requirements.length > 0 && (
+          <div className="wireframe-card space-y-3">
+            <h3 className="text-sm font-semibold">Completed</h3>
+            {completed_requirements.map((item, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-success mt-0.5" />
+                <div>
+                  <span className="font-medium">{item.name}</span>
+                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        <div className="wireframe-card border-l-4 border-l-destructive">
-          <p className="text-sm font-semibold">Risk Level: High</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Sustainability documentation missing — may delay export approval under IEU-CEPA
-          </p>
+        {/* Risk */}
+        <div className={`wireframe-card border-l-4 ${risk_level === "Critical" || risk_level === "High" ? "border-l-destructive" : risk_level === "Medium" ? "border-l-warning" : "border-l-success"}`}>
+          <p className="text-sm font-semibold">Risk Level: {risk_level}</p>
+          <p className="text-xs text-muted-foreground mt-1">{risk_description}</p>
         </div>
 
         {/* Action Plan */}
-        <div className="wireframe-card space-y-4">
-          <h3 className="text-sm font-semibold">Recommended Action Plan</h3>
-          {[
-            { num: 1, title: "Obtain Digital Product Passport", desc: "Register products on EU DPP platform with sustainability data", effort: "~3 weeks", priority: "High" },
-            { num: 2, title: "Complete EUDR Due Diligence", desc: "Prepare deforestation-free supply chain documentation", effort: "~4 weeks", priority: "High" },
-            { num: 3, title: "Apply for CE Marking", desc: "Engage a notified body for product conformity assessment", effort: "~6 weeks", priority: "Medium" },
-            { num: 4, title: "Prepare ESG Report", desc: "Document environmental, social, and governance practices", effort: "~2 weeks", priority: "Medium" },
-            { num: 5, title: "Verify Rules of Origin", desc: "Ensure cumulation rules are met for IEU-CEPA tariff benefits", effort: "~1 week", priority: "Low" },
-          ].map((item) => (
-            <div key={item.num} className="flex gap-3 text-sm">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                {item.num}
-              </span>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{item.title}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                    item.priority === "High" ? "bg-destructive/10 text-destructive" :
-                    item.priority === "Medium" ? "bg-warning/10 text-warning" :
-                    "bg-muted text-muted-foreground"
-                  }`}>{item.priority}</span>
+        {action_plan.length > 0 && (
+          <div className="wireframe-card space-y-4">
+            <h3 className="text-sm font-semibold">Recommended Action Plan</h3>
+            {action_plan.map((item, i) => (
+              <div key={i} className="flex gap-3 text-sm">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                  {i + 1}
+                </span>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium">{item.title}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      item.priority === "High" ? "bg-destructive/10 text-destructive" :
+                      item.priority === "Medium" ? "bg-warning/10 text-warning" :
+                      "bg-muted text-muted-foreground"
+                    }`}>{item.priority}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{item.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Estimated effort: {item.effort}</p>
                 </div>
-                <p className="text-xs text-muted-foreground">{item.desc}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Estimated effort: {item.effort}</p>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         <div className="flex gap-3">
           <button className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground">
