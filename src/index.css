@@ -2,39 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 210 20% 12%;
+    --background: 210 20% 97%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 20% 12%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 20% 12%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 199 60% 38%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 35% 45%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 210 15% 93%;
-    --muted-foreground: 210 10% 50%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 160 30% 92%;
-    --accent-foreground: 160 35% 25%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 65% 55%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 15% 88%;
-    --input: 210 15% 88%;
-    --ring: 199 60% 38%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -46,35 +46,35 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     /* Custom tokens */
-    --warning: 38 90% 50%;
-    --warning-foreground: 38 90% 15%;
-    --success: 160 50% 40%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 45 93% 15%;
+    --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
-    --info: 199 60% 90%;
-    --info-foreground: 199 60% 25%;
+    --info: 217 91% 95%;
+    --info-foreground: 217 91% 35%;
     --nav-height: 4.5rem;
   }
 
   .dark {
-    --background: 210 20% 8%;
-    --foreground: 210 15% 92%;
-    --card: 210 20% 12%;
-    --card-foreground: 210 15% 92%;
-    --popover: 210 20% 12%;
-    --popover-foreground: 210 15% 92%;
-    --primary: 199 60% 50%;
+    --background: 222 47% 8%;
+    --foreground: 210 40% 96%;
+    --card: 222 47% 12%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 47% 12%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 160 35% 45%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 210 15% 18%;
-    --muted-foreground: 210 10% 60%;
-    --accent: 160 30% 18%;
-    --accent-foreground: 160 30% 80%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 96%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 210 15% 22%;
-    --input: 210 15% 22%;
-    --ring: 199 60% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 33% 22%;
+    --input: 217 33% 22%;
+    --ring: 217 91% 60%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -93,36 +93,36 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'IBM Plex Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
   }
 }
 
 @layer components {
-  .wireframe-card {
+  .app-card {
+    @apply bg-card rounded-lg border border-border p-4 shadow-sm transition-shadow hover:shadow-md;
+  }
+
+  .app-card-static {
     @apply bg-card rounded-lg border border-border p-4 shadow-sm;
   }
 
-  .quick-action-btn {
-    @apply flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-card p-4 text-center text-sm font-medium text-foreground transition-colors hover:border-primary hover:bg-accent;
-  }
-
   .trust-badge {
-    @apply inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground;
+    @apply inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary;
   }
 
-  .tag-label {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  .coming-soon-badge {
+    @apply inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider;
   }
 
-  .tag-beginner {
-    @apply tag-label bg-accent text-accent-foreground;
+  .priority-high {
+    @apply inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive;
   }
 
-  .tag-advanced {
-    @apply tag-label bg-info text-info-foreground;
+  .priority-medium {
+    @apply inline-flex items-center rounded-full bg-warning/15 px-2.5 py-0.5 text-xs font-semibold text-warning-foreground;
   }
 
-  .tag-required {
-    @apply tag-label bg-warning/15 text-warning-foreground;
+  .priority-low {
+    @apply inline-flex items-center rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-semibold text-success;
   }
 }

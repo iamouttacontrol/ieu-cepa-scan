@@ -3,7 +3,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import AppLayout from "./components/AppLayout";
+import DashboardScreen from "./components/screens/DashboardScreen";
+import ReadinessScanScreen from "./components/screens/ReadinessScanScreen";
+import ActionPlanScreen from "./components/screens/ActionPlanScreen";
+import LearningScreen from "./components/screens/LearningScreen";
+import ProfileScreen from "./components/screens/ProfileScreen";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -15,8 +20,14 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<DashboardScreen />} />
+            <Route path="/readiness-scan" element={<ReadinessScanScreen />} />
+            <Route path="/action-plan-generator" element={<ActionPlanScreen />} />
+            <Route path="/action-plan" element={<ActionPlanScreen />} />
+            <Route path="/learning" element={<LearningScreen />} />
+            <Route path="/profile" element={<ProfileScreen />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
