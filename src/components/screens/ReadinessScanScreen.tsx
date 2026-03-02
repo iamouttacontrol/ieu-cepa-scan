@@ -1,5 +1,5 @@
 import { Upload, ChevronRight, ChevronLeft, ShieldCheck, AlertTriangle, CheckCircle2, X, FileText, Download, Users, Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +22,7 @@ interface ScanData {
     origin: boolean;
     foodSafety: boolean;
   };
-  uploadedFiles: string[];
+  uploadedFiles: { name: string; path: string; size: number }[];
 }
 
 interface Requirement {
@@ -66,6 +66,8 @@ const ReadinessScanScreen = () => {
   const [data, setData] = useState<ScanData>(initialData);
   const [analyzing, setAnalyzing] = useState(false);
   const [results, setResults] = useState<ScanResults | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const progressPercent = (currentStep / TOTAL_STEPS) * 100;
 
@@ -151,12 +153,49 @@ const ReadinessScanScreen = () => {
     }));
   };
 
-  const addFile = (name: string) => {
-    setData((prev) => ({ ...prev, uploadedFiles: [...prev.uploadedFiles, name] }));
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error(`${file.name} exceeds 10MB limit`);
+          continue;
+        }
+        const filePath = `uploads/${Date.now()}-${file.name}`;
+        const { error } = await supabase.storage.from("scan-documents").upload(filePath, file);
+        if (error) {
+          toast.error(`Failed to upload ${file.name}`);
+          console.error(error);
+          continue;
+        }
+        setData((prev) => ({
+          ...prev,
+          uploadedFiles: [...prev.uploadedFiles, { name: file.name, path: filePath, size: file.size }],
+        }));
+        toast.success(`${file.name} uploaded`);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
-  const removeFile = (index: number) => {
+  const removeFile = async (index: number) => {
+    const file = data.uploadedFiles[index];
+    if (file) {
+      await supabase.storage.from("scan-documents").remove([file.path]);
+    }
     setData((prev) => ({ ...prev, uploadedFiles: prev.uploadedFiles.filter((_, i) => i !== index) }));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   // --- ANALYZING SCREEN ---
@@ -442,12 +481,26 @@ const ReadinessScanScreen = () => {
           </div>
 
           <div className="wireframe-card">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+              className="hidden"
+              onChange={(e) => handleFileUpload(e.target.files)}
+            />
             <div
-              className="flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border py-8 cursor-pointer"
-              onClick={() => addFile(`Document_${data.uploadedFiles.length + 1}.pdf`)}
+              className="flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border py-8 cursor-pointer transition-colors hover:border-primary hover:bg-accent/30"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleFileUpload(e.dataTransfer.files); }}
             >
-              <Upload className="h-8 w-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Tap to upload or drag files</p>
+              {uploading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              ) : (
+                <Upload className="h-8 w-8 text-muted-foreground" />
+              )}
+              <p className="text-sm text-muted-foreground">{uploading ? "Uploading..." : "Tap to upload or drag files"}</p>
               <p className="text-xs text-muted-foreground">PDF, DOC, images up to 10MB</p>
             </div>
           </div>
@@ -459,7 +512,10 @@ const ReadinessScanScreen = () => {
                 <div key={i} className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2">
                   <div className="flex items-center gap-2 text-sm">
                     <FileText className="h-4 w-4 text-muted-foreground" />
-                    {file}
+                    <div>
+                      <p className="font-medium">{file.name}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                    </div>
                   </div>
                   <button onClick={() => removeFile(i)} className="text-muted-foreground hover:text-destructive">
                     <X className="h-4 w-4" />
