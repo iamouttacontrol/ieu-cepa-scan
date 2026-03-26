@@ -4,6 +4,7 @@ const KEYS = {
   USER: "@ieu_cepa:user",
   SCANS: "@ieu_cepa:scans",
   ACTION_COMPLETED: "@ieu_cepa:action_completed", // { [scanId]: boolean[] }
+  LANGUAGE: "@ieu_cepa:language",
 };
 
 export interface User {
@@ -87,6 +88,21 @@ export const storage = {
       const all = data ? JSON.parse(data) : {};
       all[scanId] = completed;
       await AsyncStorage.setItem(KEYS.ACTION_COMPLETED, JSON.stringify(all));
+    } catch {}
+  },
+
+  // --- Language ---
+  async getLanguage(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(KEYS.LANGUAGE);
+    } catch {
+      return null;
+    }
+  },
+
+  async setLanguage(lang: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem(KEYS.LANGUAGE, lang);
     } catch {}
   },
 };

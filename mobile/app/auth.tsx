@@ -14,6 +14,7 @@ import {
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const SECTORS = [
   "Herstellung",
@@ -29,6 +30,7 @@ const SECTORS = [
 type Tab = "login" | "register";
 
 export default function AuthScreen() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>("login");
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
@@ -143,7 +145,7 @@ export default function AuthScreen() {
               Sustainable Supply Academy
             </Text>
             <Text style={{ color: "#93c5fd", fontSize: 13, marginTop: 4, textAlign: "center" }}>
-              EU-Compliance für indonesische Exporteure
+              {t("auth.appSubtitle")}
             </Text>
           </View>
 
@@ -180,7 +182,7 @@ export default function AuthScreen() {
                   color: activeTab === "login" ? "#1a5276" : "#6b7280",
                 }}
               >
-                Anmelden
+                {t("auth.login")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -205,7 +207,7 @@ export default function AuthScreen() {
                   color: activeTab === "register" ? "#1a5276" : "#6b7280",
                 }}
               >
-                Registrieren
+                {t("auth.register")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -214,7 +216,7 @@ export default function AuthScreen() {
           <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 }}>
             {activeTab === "login" ? (
               <View>
-                <FormLabel text="E-Mail-Adresse" />
+                <FormLabel text={t("auth.email")} />
                 <TextInput
                   style={inputStyle}
                   placeholder="deine@email.com"
@@ -226,7 +228,7 @@ export default function AuthScreen() {
                   autoCorrect={false}
                 />
 
-                <FormLabel text="Passwort" />
+                <FormLabel text={t("auth.password")} />
                 <TextInput
                   style={[inputStyle, { marginBottom: 24 }]}
                   placeholder="Mindestens 6 Zeichen"
@@ -250,24 +252,24 @@ export default function AuthScreen() {
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
-                      Anmelden
+                      {t("auth.loginBtn")}
                     </Text>
                   )}
                 </TouchableOpacity>
 
                 <Text style={{ textAlign: "center", color: "#6b7280", fontSize: 13, marginTop: 16 }}>
-                  Noch kein Konto?{" "}
+                  {t("auth.noAccount")}{" "}
                   <Text
                     style={{ color: "#1a5276", fontWeight: "600" }}
                     onPress={() => setActiveTab("register")}
                   >
-                    Jetzt registrieren
+                    {t("auth.registerBtn")}
                   </Text>
                 </Text>
               </View>
             ) : (
               <View>
-                <FormLabel text="Vollständiger Name *" />
+                <FormLabel text={t("auth.name") + " *"} />
                 <TextInput
                   style={inputStyle}
                   placeholder="Dein Name"
@@ -277,7 +279,7 @@ export default function AuthScreen() {
                   autoCapitalize="words"
                 />
 
-                <FormLabel text="E-Mail-Adresse *" />
+                <FormLabel text={t("auth.email") + " *"} />
                 <TextInput
                   style={inputStyle}
                   placeholder="deine@email.com"
@@ -289,7 +291,7 @@ export default function AuthScreen() {
                   autoCorrect={false}
                 />
 
-                <FormLabel text="Passwort *" />
+                <FormLabel text={t("auth.password") + " *"} />
                 <TextInput
                   style={inputStyle}
                   placeholder="Mindestens 6 Zeichen"
@@ -299,7 +301,7 @@ export default function AuthScreen() {
                   secureTextEntry
                 />
 
-                <FormLabel text="Unternehmen *" />
+                <FormLabel text={t("auth.company") + " *"} />
                 <TextInput
                   style={inputStyle}
                   placeholder="Name deines Unternehmens"
@@ -308,7 +310,7 @@ export default function AuthScreen() {
                   onChangeText={setRegCompany}
                 />
 
-                <FormLabel text="Branche *" />
+                <FormLabel text={t("auth.sector") + " *"} />
                 <TouchableOpacity
                   style={[
                     inputStyle,
@@ -379,18 +381,18 @@ export default function AuthScreen() {
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
-                      Konto erstellen
+                      {t("auth.registerBtn")}
                     </Text>
                   )}
                 </TouchableOpacity>
 
                 <Text style={{ textAlign: "center", color: "#6b7280", fontSize: 13, marginTop: 16 }}>
-                  Bereits registriert?{" "}
+                  {t("auth.hasAccount")}{" "}
                   <Text
                     style={{ color: "#1a5276", fontWeight: "600" }}
                     onPress={() => setActiveTab("login")}
                   >
-                    Jetzt anmelden
+                    {t("auth.loginBtn")}
                   </Text>
                 </Text>
               </View>

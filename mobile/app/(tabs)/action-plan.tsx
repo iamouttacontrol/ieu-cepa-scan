@@ -10,36 +10,37 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { storage, ScanResult } from "@/lib/storage";
+import { useTranslation } from "react-i18next";
 
-type Priority = "Alle" | "Hoch" | "Mittel" | "Niedrig";
+type Priority = "all" | "high" | "medium" | "low";
 
-const FILTER_TABS: Priority[] = ["Alle", "Hoch", "Mittel", "Niedrig"];
+const FILTER_KEYS: Priority[] = ["all", "high", "medium", "low"];
 
 function getPriorityForIndex(index: number, total: number): Priority {
   const ratio = index / total;
-  if (ratio < 0.34) return "Hoch";
-  if (ratio < 0.67) return "Mittel";
-  return "Niedrig";
+  if (ratio < 0.34) return "high";
+  if (ratio < 0.67) return "medium";
+  return "low";
 }
 
 function getPriorityColor(priority: Priority): string {
-  if (priority === "Hoch") return "#e74c3c";
-  if (priority === "Mittel") return "#f39c12";
-  if (priority === "Niedrig") return "#27ae60";
+  if (priority === "high") return "#e74c3c";
+  if (priority === "medium") return "#f39c12";
+  if (priority === "low") return "#27ae60";
   return "#9ca3af";
 }
 
 function getPriorityBg(priority: Priority): string {
-  if (priority === "Hoch") return "#fef2f2";
-  if (priority === "Mittel") return "#fffbeb";
-  if (priority === "Niedrig") return "#f0fdf4";
+  if (priority === "high") return "#fef2f2";
+  if (priority === "medium") return "#fffbeb";
+  if (priority === "low") return "#f0fdf4";
   return "#f9fafb";
 }
 
 function getPriorityBorderColor(priority: Priority): string {
-  if (priority === "Hoch") return "#fecaca";
-  if (priority === "Mittel") return "#fde68a";
-  if (priority === "Niedrig") return "#bbf7d0";
+  if (priority === "high") return "#fecaca";
+  if (priority === "medium") return "#fde68a";
+  if (priority === "low") return "#bbf7d0";
   return "#e5e7eb";
 }
 
@@ -58,19 +59,20 @@ function getRiskColor(riskLevel: string): string {
   return "#9ca3af";
 }
 
-function getRiskLabel(riskLevel: string): string {
-  const l = riskLevel?.toLowerCase();
-  if (l === "high") return "Hoch";
-  if (l === "medium") return "Mittel";
-  if (l === "low") return "Niedrig";
-  return riskLevel ?? "–";
-}
-
 export default function ActionPlanScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
-  const [filter, setFilter] = useState<Priority>("Alle");
+  const [filter, setFilter] = useState<Priority>("all");
+
+  const getRiskLabel = (riskLevel: string): string => {
+    const l = riskLevel?.toLowerCase();
+    if (l === "high") return t("common.risk.high");
+    if (l === "medium") return t("common.risk.medium");
+    if (l === "low") return t("common.risk.low");
+    return riskLevel ?? "–";
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -110,11 +112,29 @@ export default function ActionPlanScreen() {
   };
 
   const filteredItems =
-    filter === "Alle" ? actionItems : actionItems.filter((i) => i.priority === filter);
+    filter === "all" ? actionItems : actionItems.filter((i) => i.priority === filter);
 
   const completedCount = actionItems.filter((i) => i.completed).length;
   const totalCount = actionItems.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  const getFilterLabel = (key: Priority): string => {
+    switch (key) {
+      case "all": return t("actionPlan.filter.all");
+      case "high": return t("actionPlan.filter.high");
+      case "medium": return t("actionPlan.filter.medium");
+      case "low": return t("actionPlan.filter.low");
+    }
+  };
+
+  const getPriorityLabel = (priority: Priority): string => {
+    switch (priority) {
+      case "high": return t("actionPlan.priority.high");
+      case "medium": return t("actionPlan.priority.medium");
+      case "low": return t("actionPlan.priority.low");
+      default: return priority;
+    }
+  };
 
   // ── Empty state ────────────────────────────────────────────────────────────
   if (!scan) {
@@ -123,8 +143,8 @@ export default function ActionPlanScreen() {
         <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
         <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
           <View style={{ backgroundColor: "#1a5276", paddingTop: 56, paddingBottom: 24, paddingHorizontal: 20 }}>
-            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>Aktionsplan</Text>
-            <Text style={{ color: "#93c5fd", fontSize: 12, marginTop: 2 }}>Priorisierte Compliance-Schritte</Text>
+            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>{t("actionPlan.title")}</Text>
+            <Text style={{ color: "#93c5fd", fontSize: 12, marginTop: 2 }}>{t("actionPlan.subtitle")}</Text>
           </View>
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
             <View
@@ -141,10 +161,10 @@ export default function ActionPlanScreen() {
               <Ionicons name="list-circle-outline" size={44} color="#9ca3af" />
             </View>
             <Text style={{ color: "#1f2937", fontWeight: "bold", fontSize: 18, textAlign: "center" }}>
-              Noch kein Aktionsplan
+              {t("actionPlan.noScan")}
             </Text>
             <Text style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", marginTop: 8, lineHeight: 20 }}>
-              Führe zuerst einen Readiness Scan durch, um deinen personalisierten Aktionsplan zu erhalten.
+              {t("actionPlan.noScanText")}
             </Text>
             <TouchableOpacity
               style={{
@@ -156,7 +176,7 @@ export default function ActionPlanScreen() {
               }}
               onPress={() => router.push("/(tabs)/scan")}
             >
-              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 15 }}>Scan starten</Text>
+              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 15 }}>{t("common.startScan")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -173,9 +193,9 @@ export default function ActionPlanScreen() {
         <View style={{ backgroundColor: "#1a5276", paddingTop: 56, paddingBottom: 20, paddingHorizontal: 20 }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
             <View>
-              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>Aktionsplan</Text>
+              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>{t("actionPlan.title")}</Text>
               <Text style={{ color: "#93c5fd", fontSize: 12, marginTop: 2 }}>
-                {scan.company_name} · Score: {scan.score}
+                {scan.company_name} · {t("common.score")}: {scan.score}
               </Text>
             </View>
             <View
@@ -195,9 +215,9 @@ export default function ActionPlanScreen() {
           {/* Progress bar */}
           <View style={{ marginTop: 14 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
-              <Text style={{ color: "#bfdbfe", fontSize: 11 }}>Fortschritt</Text>
+              <Text style={{ color: "#bfdbfe", fontSize: 11 }}>{t("actionPlan.progress")}</Text>
               <Text style={{ color: "#fff", fontSize: 11, fontWeight: "600" }}>
-                {completedCount}/{totalCount} erledigt ({progressPercent}%)
+                {completedCount}/{totalCount} {t("actionPlan.completed")} ({progressPercent}%)
               </Text>
             </View>
             <View style={{ height: 6, backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 3, overflow: "hidden" }}>
@@ -215,15 +235,15 @@ export default function ActionPlanScreen() {
 
         {/* Filter Tabs */}
         <View style={{ flexDirection: "row", paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6, gap: 8 }}>
-          {FILTER_TABS.map((tab) => {
+          {FILTER_KEYS.map((key) => {
             const count =
-              tab === "Alle"
+              key === "all"
                 ? actionItems.length
-                : actionItems.filter((i) => i.priority === tab).length;
-            const isActive = filter === tab;
+                : actionItems.filter((i) => i.priority === key).length;
+            const isActive = filter === key;
             return (
               <TouchableOpacity
-                key={tab}
+                key={key}
                 style={{
                   paddingHorizontal: 12,
                   paddingVertical: 7,
@@ -232,10 +252,10 @@ export default function ActionPlanScreen() {
                   backgroundColor: isActive ? "#1a5276" : "#fff",
                   borderColor: isActive ? "#1a5276" : "#e5e7eb",
                 }}
-                onPress={() => setFilter(tab)}
+                onPress={() => setFilter(key)}
               >
                 <Text style={{ fontSize: 12, fontWeight: "600", color: isActive ? "#fff" : "#6b7280" }}>
-                  {tab} ({count})
+                  {getFilterLabel(key)} ({count})
                 </Text>
               </TouchableOpacity>
             );
@@ -248,10 +268,10 @@ export default function ActionPlanScreen() {
             <View style={{ alignItems: "center", paddingVertical: 48 }}>
               <Ionicons name="checkmark-done-circle" size={52} color="#27ae60" />
               <Text style={{ color: "#374151", fontWeight: "600", fontSize: 15, marginTop: 12 }}>
-                Alle Punkte erledigt!
+                {t("actionPlan.allDone")}
               </Text>
               <Text style={{ color: "#9ca3af", fontSize: 13, marginTop: 4 }}>
-                Gut gemacht! Du bist auf dem richtigen Weg.
+                {t("actionPlan.allDoneText")}
               </Text>
             </View>
           ) : (
@@ -302,7 +322,7 @@ export default function ActionPlanScreen() {
                         }}
                       >
                         <Text style={{ fontSize: 11, fontWeight: "700", color: getPriorityColor(item.priority) }}>
-                          {item.priority}
+                          {getPriorityLabel(item.priority)}
                         </Text>
                       </View>
                       <Text style={{ color: "#d1d5db", fontSize: 11 }}>#{idx + 1}</Text>
@@ -343,7 +363,7 @@ export default function ActionPlanScreen() {
             onPress={() => router.push("/(tabs)/scan")}
           >
             <Ionicons name="refresh-outline" size={16} color="#6b7280" />
-            <Text style={{ color: "#6b7280", fontWeight: "600", fontSize: 14 }}>Neuer Scan</Text>
+            <Text style={{ color: "#6b7280", fontWeight: "600", fontSize: 14 }}>{t("actionPlan.newScan")}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>

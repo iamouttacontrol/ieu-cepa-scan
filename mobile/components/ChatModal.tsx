@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { API_BASE_URL } from "@/constants/api";
+import { useTranslation } from "react-i18next";
 
 interface Message {
   id: string;
@@ -27,31 +28,31 @@ interface ChatModalProps {
   onClose: () => void;
 }
 
-const QUICK_ACTIONS = [
-  "Was ist der DPP?",
-  "EUDR erklären",
-  "CE-Kennzeichnung",
-  "ESG-Pflichten",
-];
-
-const INITIAL_MESSAGE: Message = {
-  id: "init",
-  role: "assistant",
-  content:
-    "Hallo! Ich bin dein KI-Assistent für EU-Compliance-Fragen. Ich helfe dir bei Fragen zu EU-Regularien, Dokumentationsanforderungen und Compliance-Prozessen für indonesische Exporteure. Wie kann ich dir helfen?",
-  sources: [],
-  timestamp: new Date(),
-};
-
 export default function ChatModal({ visible, onClose }: ChatModalProps) {
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+  const { t } = useTranslation();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
+  const QUICK_ACTIONS = [
+    t("chat.quick1"),
+    "Was ist IEU-CEPA?",
+    t("chat.quick2"),
+    t("chat.quick4"),
+  ];
+
+  const getInitialMessage = (): Message => ({
+    id: "init",
+    role: "assistant",
+    content: t("chat.initialMessage"),
+    sources: [],
+    timestamp: new Date(),
+  });
+
   useEffect(() => {
     if (visible) {
-      setMessages([{ ...INITIAL_MESSAGE, timestamp: new Date() }]);
+      setMessages([getInitialMessage()]);
       setInput("");
     }
   }, [visible]);
@@ -113,8 +114,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content:
-          "Entschuldigung, ich konnte keine Verbindung zum Server herstellen. Bitte stelle sicher, dass das Backend unter localhost:8000 läuft und versuche es erneut.",
+        content: t("chat.error"),
         sources: [],
         timestamp: new Date(),
       };
@@ -162,8 +162,8 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
             <Ionicons name="chatbubble-ellipses" size={18} color="#fff" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>KI-Assistent</Text>
-            <Text style={{ color: "#93c5fd", fontSize: 12 }}>EU-Rechtsexperten-KI · localhost:8000</Text>
+            <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>{t("chat.title")}</Text>
+            <Text style={{ color: "#93c5fd", fontSize: 12 }}>{t("chat.subtitle")} · localhost:8000</Text>
           </View>
           <TouchableOpacity
             style={{
@@ -242,7 +242,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
                   >
                     <Ionicons name="sparkles" size={10} color="#fff" />
                   </View>
-                  <Text style={{ color: "#9ca3af", fontSize: 11 }}>KI-Assistent</Text>
+                  <Text style={{ color: "#9ca3af", fontSize: 11 }}>{t("chat.title")}</Text>
                 </View>
               )}
 
@@ -323,7 +323,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
                 }}
               >
                 <ActivityIndicator size="small" color="#1a5276" />
-                <Text style={{ color: "#6b7280", fontSize: 13 }}>Antwortet...</Text>
+                <Text style={{ color: "#6b7280", fontSize: 13 }}>{t("chat.responding")}</Text>
               </View>
             </View>
           )}
@@ -357,7 +357,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
               marginRight: 10,
               maxHeight: 100,
             }}
-            placeholder="Stelle eine EU-Compliance-Frage..."
+            placeholder={t("chat.placeholder")}
             placeholderTextColor="#9ca3af"
             value={input}
             onChangeText={setInput}

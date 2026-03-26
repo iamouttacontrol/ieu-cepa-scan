@@ -6,6 +6,7 @@ import {
   StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 
 interface LearningModule {
   title: string;
@@ -21,7 +22,7 @@ const modules: LearningModule[] = [
   {
     title: "Digital Product Passport",
     subtitle: "EU-Ökodesign-Verordnung & DPP-Anforderungen",
-    duration: "5 Min.",
+    duration: "5",
     icon: "document-text",
     color: "#1a5276",
     bgColor: "#eff6ff",
@@ -30,7 +31,7 @@ const modules: LearningModule[] = [
   {
     title: "EUDR Compliance",
     subtitle: "Entwaldungsfreie Lieferketten nachweisen",
-    duration: "4 Min.",
+    duration: "4",
     icon: "leaf",
     color: "#27ae60",
     bgColor: "#f0fdf4",
@@ -39,7 +40,7 @@ const modules: LearningModule[] = [
   {
     title: "CE-Kennzeichnung",
     subtitle: "Konformität mit EU-Produktstandards",
-    duration: "3 Min.",
+    duration: "3",
     icon: "shield-checkmark",
     color: "#2e86c1",
     bgColor: "#eff6ff",
@@ -48,7 +49,7 @@ const modules: LearningModule[] = [
   {
     title: "Nachhaltigkeitsberichterstattung",
     subtitle: "ESG-Berichtspflichten für Exporteure",
-    duration: "5 Min.",
+    duration: "5",
     icon: "bar-chart",
     color: "#7c3aed",
     bgColor: "#f5f3ff",
@@ -57,7 +58,7 @@ const modules: LearningModule[] = [
   {
     title: "Produktsicherheit",
     subtitle: "EU-Produktsicherheitsverordnung",
-    duration: "4 Min.",
+    duration: "4",
     icon: "checkmark-circle",
     color: "#d97706",
     bgColor: "#fffbeb",
@@ -66,7 +67,7 @@ const modules: LearningModule[] = [
   {
     title: "REACH-Chemikalienverordnung",
     subtitle: "Registrierung & Bewertung chemischer Stoffe",
-    duration: "5 Min.",
+    duration: "5",
     icon: "flask",
     color: "#c0392b",
     bgColor: "#fef2f2",
@@ -75,14 +76,16 @@ const modules: LearningModule[] = [
 ];
 
 export default function LearningScreen() {
+  const { t } = useTranslation();
+
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
       <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
         {/* Header */}
         <View style={{ backgroundColor: "#1a5276", paddingTop: 56, paddingBottom: 24, paddingHorizontal: 20 }}>
-          <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>Learning Hub</Text>
-          <Text style={{ color: "#93c5fd", fontSize: 12, marginTop: 2 }}>EU-Compliance-Module</Text>
+          <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>{t("learning.title")}</Text>
+          <Text style={{ color: "#93c5fd", fontSize: 12, marginTop: 2 }}>{t("learning.subtitle")}</Text>
         </View>
 
         <ScrollView style={{ flex: 1 }}>
@@ -113,11 +116,10 @@ export default function LearningScreen() {
               <Ionicons name="lock-closed" size={26} color="#d97706" />
             </View>
             <Text style={{ color: "#92400e", fontWeight: "bold", fontSize: 17, textAlign: "center" }}>
-              Demnächst verfügbar
+              {t("learning.comingSoon")}
             </Text>
             <Text style={{ color: "#b45309", fontSize: 13, textAlign: "center", marginTop: 6, lineHeight: 20 }}>
-              Interaktive Lernmodule zu EU-Compliance-Themen sind in Entwicklung.
-              Werde benachrichtigt, sobald sie verfügbar sind.
+              {t("learning.comingSoonText")}
             </Text>
             <View
               style={{
@@ -186,7 +188,7 @@ export default function LearningScreen() {
                         {module.title}
                       </Text>
                       <View style={{ backgroundColor: "#f3f4f6", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 }}>
-                        <Text style={{ color: "#9ca3af", fontSize: 11 }}>{module.duration}</Text>
+                        <Text style={{ color: "#9ca3af", fontSize: 11 }}>{module.duration} {t("learning.minutes")}.</Text>
                       </View>
                     </View>
                     <Text style={{ color: "#9ca3af", fontSize: 12, marginTop: 3 }}>{module.subtitle}</Text>

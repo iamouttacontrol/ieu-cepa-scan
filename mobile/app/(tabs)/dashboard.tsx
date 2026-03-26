@@ -12,50 +12,51 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "@/context/AuthContext";
 import { storage, ScanResult } from "@/lib/storage";
 import ChatModal from "@/components/ChatModal";
+import { useTranslation } from "react-i18next";
 
 interface FeatureCard {
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
   icon: React.ComponentProps<typeof Ionicons>["name"];
   color: string;
   bgColor: string;
   action: "scan" | "action-plan" | "chat" | "learning";
-  badge?: string;
+  badgeKey?: string;
 }
 
 const featureCards: FeatureCard[] = [
   {
-    title: "Readiness Scan",
-    description: "Analysiere deine EU-Compliance-Bereitschaft",
+    titleKey: "dashboard.readinessScan",
+    descriptionKey: "scan.subtitle",
     icon: "search-circle",
     color: "#1a5276",
     bgColor: "#eff6ff",
     action: "scan",
   },
   {
-    title: "Aktionsplan",
-    description: "Priorisierte Compliance-Maßnahmen",
+    titleKey: "dashboard.actionPlan",
+    descriptionKey: "actionPlan.subtitle",
     icon: "list-circle",
     color: "#27ae60",
     bgColor: "#f0fdf4",
     action: "action-plan",
   },
   {
-    title: "KI-Assistent",
-    description: "EU-Rechtsexperten-KI befragen",
+    titleKey: "dashboard.aiAssistant",
+    descriptionKey: "chat.subtitle",
     icon: "chatbubble-ellipses",
     color: "#7c3aed",
     bgColor: "#f5f3ff",
     action: "chat",
   },
   {
-    title: "Learning Hub",
-    description: "EU-Compliance-Module & Kurse",
+    titleKey: "dashboard.learningHub",
+    descriptionKey: "learning.subtitle",
     icon: "school",
     color: "#d97706",
     bgColor: "#fffbeb",
     action: "learning",
-    badge: "Demnächst",
+    badgeKey: "dashboard.comingSoon",
   },
 ];
 
@@ -65,14 +66,6 @@ function getRiskColor(riskLevel: string): string {
   if (l === "mittel" || l === "medium") return "#f39c12";
   if (l === "niedrig" || l === "low") return "#27ae60";
   return "#9ca3af";
-}
-
-function getRiskLabel(riskLevel: string): string {
-  const l = riskLevel?.toLowerCase();
-  if (l === "high") return "Hoch";
-  if (l === "medium") return "Mittel";
-  if (l === "low") return "Niedrig";
-  return riskLevel ?? "–";
 }
 
 function formatDate(iso: string): string {
@@ -88,6 +81,7 @@ function formatDate(iso: string): string {
 }
 
 export default function DashboardScreen() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const [chatVisible, setChatVisible] = useState(false);
@@ -116,6 +110,14 @@ export default function DashboardScreen() {
     }
   };
 
+  const getRiskLabel = (riskLevel: string): string => {
+    const l = riskLevel?.toLowerCase();
+    if (l === "high") return t("common.risk.high");
+    if (l === "medium") return t("common.risk.medium");
+    if (l === "low") return t("common.risk.low");
+    return riskLevel ?? "–";
+  };
+
   const displayName = user?.name
     ? user.name.charAt(0).toUpperCase() + user.name.slice(1)
     : "Nutzer";
@@ -126,7 +128,7 @@ export default function DashboardScreen() {
       <ScrollView style={{ flex: 1, backgroundColor: "#f9fafb" }}>
         {/* Header */}
         <View style={{ backgroundColor: "#1a5276", paddingTop: 56, paddingBottom: 32, paddingHorizontal: 24 }}>
-          <Text style={{ color: "#93c5fd", fontSize: 13, fontWeight: "500" }}>Willkommen zurück,</Text>
+          <Text style={{ color: "#93c5fd", fontSize: 13, fontWeight: "500" }}>{t("dashboard.welcome")},</Text>
           <Text style={{ color: "#fff", fontSize: 26, fontWeight: "bold", marginTop: 2, letterSpacing: -0.5 }}>
             {displayName}!
           </Text>
@@ -148,7 +150,7 @@ export default function DashboardScreen() {
           >
             <Ionicons name="shield-checkmark" size={13} color="#93c5fd" />
             <Text style={{ color: "#bfdbfe", fontSize: 12, marginLeft: 6, fontWeight: "500" }}>
-              KI-gestützt · Rechtsgrundlagen-basiert
+              {t("dashboard.tagline")}
             </Text>
           </View>
         </View>
@@ -173,7 +175,7 @@ export default function DashboardScreen() {
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 11, color: "#9ca3af", fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase" }}>
-                  Letzter Scan
+                  {t("dashboard.lastScan")}
                 </Text>
                 <Text style={{ fontSize: 15, color: "#1f2937", fontWeight: "700", marginTop: 3 }}>
                   {lastScan.company_name}
@@ -210,7 +212,7 @@ export default function DashboardScreen() {
                 style={{ flexDirection: "row", alignItems: "center" }}
                 onPress={() => router.push("/(tabs)/action-plan")}
               >
-                <Text style={{ color: "#1a5276", fontSize: 13, fontWeight: "600" }}>Aktionsplan</Text>
+                <Text style={{ color: "#1a5276", fontSize: 13, fontWeight: "600" }}>{t("dashboard.actionPlan")}</Text>
                 <Ionicons name="chevron-forward" size={14} color="#1a5276" style={{ marginLeft: 2 }} />
               </TouchableOpacity>
             </View>
@@ -234,10 +236,10 @@ export default function DashboardScreen() {
           >
             <Ionicons name="search-circle-outline" size={40} color="#9ca3af" />
             <Text style={{ color: "#374151", fontWeight: "600", fontSize: 15, marginTop: 10 }}>
-              Noch kein Scan durchgeführt
+              {t("dashboard.noScan")}
             </Text>
             <Text style={{ color: "#9ca3af", fontSize: 12, textAlign: "center", marginTop: 4, lineHeight: 18 }}>
-              Starte jetzt einen Readiness Scan, um deine EU-Compliance zu bewerten.
+              {t("dashboard.aboutText")}
             </Text>
             <TouchableOpacity
               style={{
@@ -249,7 +251,7 @@ export default function DashboardScreen() {
               }}
               onPress={() => router.push("/(tabs)/scan")}
             >
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>Scan starten</Text>
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>{t("dashboard.startScan")}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -257,12 +259,12 @@ export default function DashboardScreen() {
         {/* Feature Cards */}
         <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
           <Text style={{ color: "#6b7280", fontWeight: "600", fontSize: 11, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 12 }}>
-            Funktionen
+            {t("dashboard.features")}
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
             {featureCards.map((card) => (
               <TouchableOpacity
-                key={card.title}
+                key={card.titleKey}
                 style={{
                   backgroundColor: "#fff",
                   borderRadius: 18,
@@ -290,11 +292,11 @@ export default function DashboardScreen() {
                 >
                   <Ionicons name={card.icon} size={24} color={card.color} />
                 </View>
-                <Text style={{ color: "#1f2937", fontWeight: "700", fontSize: 13 }}>{card.title}</Text>
+                <Text style={{ color: "#1f2937", fontWeight: "700", fontSize: 13 }}>{t(card.titleKey)}</Text>
                 <Text style={{ color: "#6b7280", fontSize: 11, marginTop: 3, lineHeight: 16 }}>
-                  {card.description}
+                  {t(card.descriptionKey)}
                 </Text>
-                {card.badge && (
+                {card.badgeKey && (
                   <View
                     style={{
                       backgroundColor: "#fef3c7",
@@ -305,7 +307,7 @@ export default function DashboardScreen() {
                       alignSelf: "flex-start",
                     }}
                   >
-                    <Text style={{ fontSize: 10, color: "#92400e", fontWeight: "600" }}>{card.badge}</Text>
+                    <Text style={{ fontSize: 10, color: "#92400e", fontWeight: "600" }}>{t(card.badgeKey)}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -330,16 +332,15 @@ export default function DashboardScreen() {
           }}
         >
           <Text style={{ fontSize: 11, color: "#9ca3af", fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 8 }}>
-            Über Sustainable Supply Academy
+            {t("dashboard.about")}
           </Text>
           <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>
-            Die Sustainable Supply Academy unterstützt indonesische Unternehmen beim Zugang zum EU-Markt.
-            Diese Plattform hilft dir, alle EU-Compliance-Anforderungen zu erfüllen.
+            {t("dashboard.aboutText")}
           </Text>
           <View style={{ flexDirection: "row", marginTop: 14, gap: 10 }}>
-            <StatBox value="6+" label="EU-Regularien" color="#1a5276" bg="#eff6ff" />
-            <StatBox value="KI" label="KI-Beratung" color="#27ae60" bg="#f0fdf4" />
-            <StatBox value="24/7" label="Verfügbar" color="#d97706" bg="#fffbeb" />
+            <StatBox value="6+" label={t("dashboard.statRegs")} color="#1a5276" bg="#eff6ff" />
+            <StatBox value="KI" label={t("dashboard.statAi")} color="#27ae60" bg="#f0fdf4" />
+            <StatBox value="24/7" label={t("dashboard.statAvailable")} color="#d97706" bg="#fffbeb" />
           </View>
         </View>
       </ScrollView>

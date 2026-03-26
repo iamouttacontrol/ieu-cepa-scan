@@ -16,6 +16,7 @@ import { useRouter } from "expo-router";
 import { API_BASE_URL } from "@/constants/api";
 import { storage, ScanResult } from "@/lib/storage";
 import { useAuth } from "@/context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const SECTORS = [
   "Herstellung",
@@ -202,24 +203,30 @@ function getRiskColor(riskLevel: string): string {
   return "#9ca3af";
 }
 
-function getRiskLabel(riskLevel: string): string {
-  const l = riskLevel?.toLowerCase();
-  if (l === "high") return "Hoch";
-  if (l === "medium") return "Mittel";
-  if (l === "low") return "Niedrig";
-  return riskLevel ?? "–";
-}
-
-const STEP_LABELS = ["Unternehmen", "Produkt & Markt", "Compliance", "Ergebnisse"];
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function ScanScreen() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+
+  const STEP_LABELS = [
+    t("scan.step.company"),
+    t("scan.step.product"),
+    t("scan.step.compliance"),
+    t("scan.step.results"),
+  ];
+
+  const getRiskLabel = (riskLevel: string): string => {
+    const l = riskLevel?.toLowerCase();
+    if (l === "high") return t("common.risk.high");
+    if (l === "medium") return t("common.risk.medium");
+    if (l === "low") return t("common.risk.low");
+    return riskLevel ?? "–";
+  };
 
   const defaultForm = (): ScanFormData => ({
     company_name: user?.company ?? "",
@@ -246,11 +253,11 @@ export default function ScanScreen() {
 
   const handleNext = () => {
     if (step === 0 && !form.company_name.trim()) {
-      Alert.alert("Pflichtfeld fehlt", "Bitte Unternehmensname eingeben.");
+      Alert.alert("Pflichtfeld fehlt", t("scan.missingField.company"));
       return;
     }
     if (step === 1 && !form.product_type.trim()) {
-      Alert.alert("Pflichtfeld fehlt", "Bitte Produkttyp eingeben.");
+      Alert.alert("Pflichtfeld fehlt", t("scan.missingField.product"));
       return;
     }
     if (step === 2) {
@@ -308,7 +315,7 @@ export default function ScanScreen() {
       Alert.alert(
         "Analyse fehlgeschlagen",
         `Die Verbindung zum Server konnte nicht hergestellt werden.\n\nDetails: ${msg}`,
-        [{ text: "Zurück", onPress: () => setStep(2) }]
+        [{ text: t("scan.back"), onPress: () => setStep(2) }]
       );
     } finally {
       setLoading(false);
@@ -332,8 +339,8 @@ export default function ScanScreen() {
       <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
         {/* Header */}
         <View style={{ backgroundColor: "#1a5276", paddingTop: 56, paddingBottom: 20, paddingHorizontal: 20 }}>
-          <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>Readiness Scan</Text>
-          <Text style={{ color: "#93c5fd", fontSize: 12, marginTop: 2 }}>EU-Compliance-Analyse</Text>
+          <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>{t("scan.title")}</Text>
+          <Text style={{ color: "#93c5fd", fontSize: 12, marginTop: 2 }}>{t("scan.subtitle")}</Text>
 
           {/* Step progress */}
           <View style={{ flexDirection: "row", marginTop: 16, gap: 6 }}>
@@ -367,9 +374,9 @@ export default function ScanScreen() {
           {/* ── Step 0: Company Profile ── */}
           {step === 0 && (
             <View>
-              <SectionHeader title="Unternehmensprofil" subtitle="Grundlegende Informationen zu deinem Unternehmen" />
+              <SectionHeader title={t("scan.step.company")} subtitle="Grundlegende Informationen zu deinem Unternehmen" />
 
-              <Text style={labelStyle}>Unternehmensname *</Text>
+              <Text style={labelStyle}>{t("scan.companyName")}</Text>
               <TextInput
                 style={inputStyle}
                 placeholder="Name deines Unternehmens"
@@ -378,10 +385,10 @@ export default function ScanScreen() {
                 onChangeText={(v) => update("company_name", v)}
               />
 
-              <Dropdown label="Branche *" value={form.sector} options={SECTORS} onSelect={(v) => update("sector", v)} />
-              <Dropdown label="Unternehmensgröße *" value={form.company_size} options={COMPANY_SIZES} onSelect={(v) => update("company_size", v)} />
+              <Dropdown label={t("scan.sector")} value={form.sector} options={SECTORS} onSelect={(v) => update("sector", v)} />
+              <Dropdown label={t("scan.companySize")} value={form.company_size} options={COMPANY_SIZES} onSelect={(v) => update("company_size", v)} />
 
-              <Text style={labelStyle}>Region / Provinz</Text>
+              <Text style={labelStyle}>{t("scan.region")}</Text>
               <TextInput
                 style={inputStyle}
                 placeholder="z.B. Java, Sumatra, Bali"
@@ -395,9 +402,9 @@ export default function ScanScreen() {
           {/* ── Step 1: Product & Market ── */}
           {step === 1 && (
             <View>
-              <SectionHeader title="Produkt & Markt" subtitle="Details zu deinem Produkt und Zielmarkt" />
+              <SectionHeader title={t("scan.step.product")} subtitle="Details zu deinem Produkt und Zielmarkt" />
 
-              <Text style={labelStyle}>Produkttyp *</Text>
+              <Text style={labelStyle}>{t("scan.productType")}</Text>
               <TextInput
                 style={inputStyle}
                 placeholder="z.B. Textilien, Elektronik, Lebensmittel"
@@ -406,7 +413,7 @@ export default function ScanScreen() {
                 onChangeText={(v) => update("product_type", v)}
               />
 
-              <Text style={labelStyle}>HS-Code (optional)</Text>
+              <Text style={labelStyle}>{t("scan.hsCode")}</Text>
               <TextInput
                 style={inputStyle}
                 placeholder="z.B. 6203.42"
@@ -415,15 +422,15 @@ export default function ScanScreen() {
                 onChangeText={(v) => update("hs_code", v)}
               />
 
-              <Dropdown label="Zielland (EU) *" value={form.target_country} options={TARGET_COUNTRIES} onSelect={(v) => update("target_country", v)} />
-              <Dropdown label="Exporterfahrung *" value={form.export_experience} options={EXPORT_EXPERIENCES} onSelect={(v) => update("export_experience", v)} />
+              <Dropdown label={t("scan.targetCountry")} value={form.target_country} options={TARGET_COUNTRIES} onSelect={(v) => update("target_country", v)} />
+              <Dropdown label={t("scan.exportExperience")} value={form.export_experience} options={EXPORT_EXPERIENCES} onSelect={(v) => update("export_experience", v)} />
             </View>
           )}
 
           {/* ── Step 2: Compliance ── */}
           {step === 2 && (
             <View>
-              <SectionHeader title="Compliance Selbstbewertung" subtitle="Welche EU-Anforderungen erfüllst du bereits?" />
+              <SectionHeader title={t("scan.complianceTitle")} subtitle={t("scan.complianceSubtitle")} />
 
               <CheckboxItem
                 label="DPP – Digital Product Passport"
@@ -471,16 +478,16 @@ export default function ScanScreen() {
                 <View style={{ alignItems: "center", paddingVertical: 60 }}>
                   <ActivityIndicator size="large" color="#1a5276" />
                   <Text style={{ color: "#374151", marginTop: 16, fontWeight: "600", fontSize: 16 }}>
-                    Analyse läuft...
+                    {t("scan.analyzing")}
                   </Text>
                   <Text style={{ color: "#9ca3af", fontSize: 13, marginTop: 6, textAlign: "center" }}>
-                    Deine EU-Compliance-Bereitschaft wird bewertet
+                    {t("scan.analyzingSubtitle")}
                   </Text>
                 </View>
               ) : result ? (
                 <View>
                   <Text style={{ color: "#1f2937", fontWeight: "bold", fontSize: 18, textAlign: "center" }}>
-                    Analyseergebnisse
+                    {t("scan.results")}
                   </Text>
                   <Text style={{ color: "#6b7280", fontSize: 13, textAlign: "center", marginTop: 4, marginBottom: 8 }}>
                     {form.company_name} · {form.product_type}
@@ -498,7 +505,7 @@ export default function ScanScreen() {
                       }}
                     >
                       <Text style={{ fontWeight: "bold", fontSize: 14, color: getRiskColor(result.risk_level) }}>
-                        Risikoniveau: {getRiskLabel(result.risk_level)}
+                        {t("scan.riskLevel")}: {getRiskLabel(result.risk_level)}
                       </Text>
                     </View>
                   </View>
@@ -506,7 +513,7 @@ export default function ScanScreen() {
                   {result.completed_requirements.length > 0 && (
                     <View style={{ backgroundColor: "#f0fdf4", borderWidth: 1, borderColor: "#bbf7d0", borderRadius: 16, padding: 16, marginBottom: 12 }}>
                       <Text style={{ color: "#15803d", fontWeight: "bold", marginBottom: 10 }}>
-                        Erfüllte Anforderungen ({result.completed_requirements.length})
+                        {t("scan.completedReqs")} ({result.completed_requirements.length})
                       </Text>
                       {result.completed_requirements.map((req, i) => (
                         <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", marginBottom: 6 }}>
@@ -520,7 +527,7 @@ export default function ScanScreen() {
                   {result.missing_requirements.length > 0 && (
                     <View style={{ backgroundColor: "#fef2f2", borderWidth: 1, borderColor: "#fecaca", borderRadius: 16, padding: 16, marginBottom: 12 }}>
                       <Text style={{ color: "#b91c1c", fontWeight: "bold", marginBottom: 10 }}>
-                        Fehlende Anforderungen ({result.missing_requirements.length})
+                        {t("scan.missingReqs")} ({result.missing_requirements.length})
                       </Text>
                       {result.missing_requirements.map((req, i) => (
                         <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", marginBottom: 6 }}>
@@ -534,7 +541,7 @@ export default function ScanScreen() {
                   {result.action_plan.length > 0 && (
                     <View style={{ backgroundColor: "#eff6ff", borderWidth: 1, borderColor: "#bfdbfe", borderRadius: 16, padding: 16, marginBottom: 12 }}>
                       <Text style={{ color: "#1a5276", fontWeight: "bold", marginBottom: 10 }}>
-                        Aktionsplan ({result.action_plan.length} Schritte)
+                        {t("scan.actionPlanTitle")} ({result.action_plan.length} {t("scan.steps")})
                       </Text>
                       {result.action_plan.map((item, i) => (
                         <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", marginBottom: 8 }}>
@@ -551,13 +558,13 @@ export default function ScanScreen() {
                     style={{ backgroundColor: "#1a5276", borderRadius: 12, paddingVertical: 16, alignItems: "center", marginBottom: 10 }}
                     onPress={() => router.push("/(tabs)/action-plan")}
                   >
-                    <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>Aktionsplan öffnen</Text>
+                    <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>{t("scan.openActionPlan")}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={{ borderWidth: 1, borderColor: "#d1d5db", borderRadius: 12, paddingVertical: 16, alignItems: "center", marginBottom: 32 }}
                     onPress={resetScan}
                   >
-                    <Text style={{ color: "#374151", fontWeight: "600", fontSize: 16 }}>Neuer Scan</Text>
+                    <Text style={{ color: "#374151", fontWeight: "600", fontSize: 16 }}>{t("scan.newScan")}</Text>
                   </TouchableOpacity>
                 </View>
               ) : null}
@@ -572,7 +579,7 @@ export default function ScanScreen() {
                   style={{ flex: 1, borderWidth: 1, borderColor: "#d1d5db", borderRadius: 12, paddingVertical: 16, alignItems: "center" }}
                   onPress={() => setStep((s) => s - 1)}
                 >
-                  <Text style={{ color: "#374151", fontWeight: "600", fontSize: 15 }}>Zurück</Text>
+                  <Text style={{ color: "#374151", fontWeight: "600", fontSize: 15 }}>{t("scan.back")}</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity
@@ -580,7 +587,7 @@ export default function ScanScreen() {
                 onPress={handleNext}
               >
                 <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 15 }}>
-                  {step === 2 ? "Analyse starten" : "Weiter"}
+                  {step === 2 ? t("scan.analyzeBtn") : t("scan.next")}
                 </Text>
               </TouchableOpacity>
             </View>

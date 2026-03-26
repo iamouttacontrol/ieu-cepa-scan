@@ -13,12 +13,22 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "@/context/AuthContext";
 import { storage, ScanResult } from "@/lib/storage";
+import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
+
+const LANGUAGES = [
+  { code: "de", label: "Deutsch", flag: "🇩🇪" },
+  { code: "en", label: "English", flag: "🇬🇧" },
+  { code: "id", label: "Bahasa", flag: "🇮🇩" },
+];
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const router = useRouter();
   const [scans, setScans] = useState<ScanResult[]>([]);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [currentLang, setCurrentLang] = useState(i18n.language);
 
   useFocusEffect(
     useCallback(() => {
@@ -26,14 +36,20 @@ export default function ProfileScreen() {
     }, [])
   );
 
+  const handleLanguageChange = async (code: string) => {
+    await i18n.changeLanguage(code);
+    await storage.setLanguage(code);
+    setCurrentLang(code);
+  };
+
   const handleLogout = () => {
     Alert.alert(
-      "Abmelden",
-      "Möchtest du dich wirklich abmelden?",
+      t("profile.logoutConfirm"),
+      t("profile.logoutText"),
       [
-        { text: "Abbrechen", style: "cancel" },
+        { text: t("profile.cancel"), style: "cancel" },
         {
-          text: "Abmelden",
+          text: t("profile.logout"),
           style: "destructive",
           onPress: async () => {
             await logout();
@@ -106,43 +122,75 @@ export default function ProfileScreen() {
           <View style={{ flexDirection: "row", marginHorizontal: 20, marginTop: -20, gap: 10, marginBottom: 20 }}>
             <StatCard
               value={String(scans.length)}
-              label="Scans"
+              label={t("profile.scans")}
               color="#1a5276"
               bg="#eff6ff"
             />
             <StatCard
               value={String(totalActionItems)}
-              label="Action Items"
+              label={t("profile.actionItems")}
               color="#27ae60"
               bg="#f0fdf4"
             />
             <StatCard
               value={lastScore !== null ? String(lastScore) : "–"}
-              label="Letzter Score"
+              label={t("profile.lastScore")}
               color="#d97706"
               bg="#fffbeb"
             />
           </View>
 
           {/* Profile Info */}
-          <SectionCard title="Profil">
-            <ProfileRow icon="person-outline" label="Name" value={user?.name ?? "–"} />
-            <ProfileRow icon="mail-outline" label="E-Mail" value={user?.email ?? "–"} />
-            <ProfileRow icon="business-outline" label="Unternehmen" value={user?.company ?? "–"} />
-            <ProfileRow icon="briefcase-outline" label="Branche" value={user?.sector ?? "–"} last />
+          <SectionCard title={t("profile.title")}>
+            <ProfileRow icon="person-outline" label={t("auth.name")} value={user?.name ?? "–"} />
+            <ProfileRow icon="mail-outline" label={t("auth.email")} value={user?.email ?? "–"} />
+            <ProfileRow icon="business-outline" label={t("auth.company")} value={user?.company ?? "–"} />
+            <ProfileRow icon="briefcase-outline" label={t("auth.sector")} value={user?.sector ?? "–"} last />
           </SectionCard>
 
           {/* Settings */}
-          <SectionCard title="Einstellungen">
-            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" }}>
-              <View style={iconBoxStyle}>
-                <Ionicons name="language-outline" size={17} color="#6b7280" />
+          <SectionCard title={t("profile.settings")}>
+            {/* Language Switcher */}
+            <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                <View style={iconBoxStyle}>
+                  <Ionicons name="language-outline" size={17} color="#6b7280" />
+                </View>
+                <Text style={{ color: "#1f2937", fontWeight: "500", fontSize: 14 }}>{t("profile.language")}</Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: "#1f2937", fontWeight: "500", fontSize: 14 }}>Sprache</Text>
-                <Text style={{ color: "#9ca3af", fontSize: 12 }}>Deutsch</Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                {LANGUAGES.map((lang) => {
+                  const isActive = currentLang === lang.code;
+                  return (
+                    <TouchableOpacity
+                      key={lang.code}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 8,
+                        paddingHorizontal: 6,
+                        borderRadius: 10,
+                        alignItems: "center",
+                        borderWidth: 1.5,
+                        backgroundColor: isActive ? "#1a5276" : "#f9fafb",
+                        borderColor: isActive ? "#1a5276" : "#e5e7eb",
+                      }}
+                      onPress={() => handleLanguageChange(lang.code)}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={{ fontSize: 18, marginBottom: 2 }}>{lang.flag}</Text>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: "600",
+                          color: isActive ? "#fff" : "#6b7280",
+                        }}
+                      >
+                        {lang.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-              <Ionicons name="chevron-forward" size={15} color="#d1d5db" />
             </View>
 
             <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 }}>
@@ -150,8 +198,10 @@ export default function ProfileScreen() {
                 <Ionicons name="notifications-outline" size={17} color="#6b7280" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: "#1f2937", fontWeight: "500", fontSize: 14 }}>Benachrichtigungen</Text>
-                <Text style={{ color: "#9ca3af", fontSize: 12 }}>Compliance-Updates erhalten</Text>
+                <Text style={{ color: "#1f2937", fontWeight: "500", fontSize: 14 }}>{t("profile.notifications")}</Text>
+                <Text style={{ color: "#9ca3af", fontSize: 12 }}>
+                  {notificationsEnabled ? t("common.enabled") : "–"}
+                </Text>
               </View>
               <Switch
                 value={notificationsEnabled}
@@ -163,15 +213,15 @@ export default function ProfileScreen() {
           </SectionCard>
 
           {/* App Info */}
-          <SectionCard title="App-Info">
-            <ProfileRow icon="information-circle-outline" label="Version" value="1.0.0" />
-            <ProfileRow icon="server-outline" label="Backend" value="localhost:8000" />
-            <ProfileRow icon="shield-checkmark-outline" label="Datenspeicherung" value="Lokal (AsyncStorage)" last />
+          <SectionCard title={t("profile.appInfo")}>
+            <ProfileRow icon="information-circle-outline" label={t("profile.version")} value="1.0.0" />
+            <ProfileRow icon="server-outline" label={t("profile.backend")} value="localhost:8000" />
+            <ProfileRow icon="shield-checkmark-outline" label={t("profile.storage")} value="Lokal (AsyncStorage)" last />
           </SectionCard>
 
           {/* Scan History (last 3) */}
           {scans.length > 0 && (
-            <SectionCard title={`Scan-Verlauf (${scans.length})`}>
+            <SectionCard title={`${t("profile.scanHistory")} (${scans.length})`}>
               {scans.slice(0, 3).map((scan, idx) => (
                 <View
                   key={scan.id}
@@ -218,7 +268,7 @@ export default function ProfileScreen() {
               activeOpacity={0.8}
             >
               <Ionicons name="log-out-outline" size={20} color="#e74c3c" />
-              <Text style={{ color: "#e74c3c", fontWeight: "bold", fontSize: 16 }}>Abmelden</Text>
+              <Text style={{ color: "#e74c3c", fontWeight: "bold", fontSize: 16 }}>{t("profile.logout")}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
