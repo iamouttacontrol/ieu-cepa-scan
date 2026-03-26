@@ -165,7 +165,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>{t("chat.title")}</Text>
-            <Text style={{ color: "#93c5fd", fontSize: 12 }}>{t("chat.subtitle")} · localhost:8000</Text>
+            <Text style={{ color: "#93c5fd", fontSize: 12 }}>{t("chat.subtitle")}</Text>
           </View>
           <TouchableOpacity
             style={{
@@ -343,6 +343,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
             borderTopWidth: 1,
             borderTopColor: "#f3f4f6",
             backgroundColor: "#fff",
+            paddingBottom: Math.max(insets.bottom + 12, 75)
           }}
         >
           <TextInput
