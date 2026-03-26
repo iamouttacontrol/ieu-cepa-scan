@@ -15,6 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 import { storage, ScanResult } from "@/lib/storage";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const LANGUAGES = [
   { code: "de", label: "Deutsch", flag: "🇩🇪" },
@@ -24,6 +25,7 @@ const LANGUAGES = [
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const router = useRouter();
   const [scans, setScans] = useState<ScanResult[]>([]);
@@ -80,8 +82,8 @@ export default function ProfileScreen() {
         <View
           style={{
             backgroundColor: "#1a5276",
-            paddingTop: 56,
-            paddingBottom: 36,
+            paddingTop: insets.top + 12,
+            paddingBottom: 20,
             paddingHorizontal: 20,
             alignItems: "center",
           }}
@@ -115,11 +117,9 @@ export default function ProfileScreen() {
               </Text>
             </View>
           ) : null}
-        </View>
 
-        <ScrollView style={{ flex: 1 }}>
-          {/* Stats */}
-          <View style={{ flexDirection: "row", marginHorizontal: 20, marginTop: -20, gap: 10, marginBottom: 20 }}>
+          {/* Stats inside header */}
+          <View style={{ flexDirection: "row", marginTop: 20, gap: 10, width: "100%" }}>
             <StatCard
               value={String(scans.length)}
               label={t("profile.scans")}
@@ -139,7 +139,9 @@ export default function ProfileScreen() {
               bg="#fffbeb"
             />
           </View>
+        </View>
 
+        <ScrollView style={{ flex: 1, paddingTop: 16 }}>
           {/* Profile Info */}
           <SectionCard title={t("profile.title")}>
             <ProfileRow icon="person-outline" label={t("auth.name")} value={user?.name ?? "–"} />

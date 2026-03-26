@@ -14,6 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { API_BASE_URL } from "@/constants/api";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Message {
   id: string;
@@ -30,6 +31,7 @@ interface ChatModalProps {
 
 export default function ChatModal({ visible, onClose }: ChatModalProps) {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -141,7 +143,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
         <View
           style={{
             backgroundColor: "#1a5276",
-            paddingTop: 56,
+            paddingTop: insets.top + 12,
             paddingBottom: 16,
             paddingHorizontal: 16,
             flexDirection: "row",

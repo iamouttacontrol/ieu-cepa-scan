@@ -13,6 +13,7 @@ import { useAuth } from "@/context/AuthContext";
 import { storage, ScanResult } from "@/lib/storage";
 import ChatModal from "@/components/ChatModal";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface FeatureCard {
   titleKey: string;
@@ -82,6 +83,7 @@ function formatDate(iso: string): string {
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const router = useRouter();
   const [chatVisible, setChatVisible] = useState(false);
@@ -127,7 +129,7 @@ export default function DashboardScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
       <ScrollView style={{ flex: 1, backgroundColor: "#f9fafb" }}>
         {/* Header */}
-        <View style={{ backgroundColor: "#1a5276", paddingTop: 56, paddingBottom: 32, paddingHorizontal: 24 }}>
+        <View style={{ backgroundColor: "#1a5276", paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: 24 }}>
           <Text style={{ color: "#93c5fd", fontSize: 13, fontWeight: "500" }}>{t("dashboard.welcome")},</Text>
           <Text style={{ color: "#fff", fontSize: 26, fontWeight: "bold", marginTop: 2, letterSpacing: -0.5 }}>
             {displayName}!

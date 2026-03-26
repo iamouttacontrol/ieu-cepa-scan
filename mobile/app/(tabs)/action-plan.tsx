@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { storage, ScanResult } from "@/lib/storage";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type Priority = "all" | "high" | "medium" | "low";
 
@@ -61,6 +62,7 @@ function getRiskColor(riskLevel: string): string {
 
 export default function ActionPlanScreen() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
@@ -142,7 +144,7 @@ export default function ActionPlanScreen() {
       <>
         <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
         <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
-          <View style={{ backgroundColor: "#1a5276", paddingTop: 56, paddingBottom: 24, paddingHorizontal: 20 }}>
+          <View style={{ backgroundColor: "#1a5276", paddingTop: insets.top + 12, paddingBottom: 24, paddingHorizontal: 20 }}>
             <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>{t("actionPlan.title")}</Text>
             <Text style={{ color: "#93c5fd", fontSize: 12, marginTop: 2 }}>{t("actionPlan.subtitle")}</Text>
           </View>
@@ -190,7 +192,7 @@ export default function ActionPlanScreen() {
       <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
       <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
         {/* Header */}
-        <View style={{ backgroundColor: "#1a5276", paddingTop: 56, paddingBottom: 20, paddingHorizontal: 20 }}>
+        <View style={{ backgroundColor: "#1a5276", paddingTop: insets.top + 12, paddingBottom: 20, paddingHorizontal: 20 }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
             <View>
               <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>{t("actionPlan.title")}</Text>

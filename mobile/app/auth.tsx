@@ -15,6 +15,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SECTORS = [
   "Herstellung",
@@ -31,6 +32,7 @@ type Tab = "login" | "register";
 
 export default function AuthScreen() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<Tab>("login");
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
@@ -122,7 +124,7 @@ export default function AuthScreen() {
           <View
             style={{
               backgroundColor: "#1a5276",
-              paddingTop: 60,
+              paddingTop: insets.top + 12,
               paddingBottom: 40,
               paddingHorizontal: 24,
               alignItems: "center",

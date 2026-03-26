@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface LearningModule {
   title: string;
@@ -77,13 +78,14 @@ const modules: LearningModule[] = [
 
 export default function LearningScreen() {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
       <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
         {/* Header */}
-        <View style={{ backgroundColor: "#1a5276", paddingTop: 56, paddingBottom: 24, paddingHorizontal: 20 }}>
+        <View style={{ backgroundColor: "#1a5276", paddingTop: insets.top + 12, paddingBottom: 24, paddingHorizontal: 20 }}>
           <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>{t("learning.title")}</Text>
           <Text style={{ color: "#93c5fd", fontSize: 12, marginTop: 2 }}>{t("learning.subtitle")}</Text>
         </View>
