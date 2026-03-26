@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(venv/Scripts/python -c \"import fastapi, langchain, chromadb; print\\(''OK''\\)\")",
+      "Bash(npx expo:*)",
+      "Bash(rm -rf node_modules)",
+      "Bash(npm install:*)",
+      "Bash(find '/c/Users/timkl/Documents/HRW/Master/Erstes Semester/Projekt2/Neues Projekt/ieu-cepa-scan/mobile' -type f -name *.tsx -o -name *.ts -o -name *.json)",
+      "Bash(venv/Scripts/pip install:*)",
+      "Bash(backend/venv/Scripts/python docs/generate_docs.py)"
+    ]
+  }
+}

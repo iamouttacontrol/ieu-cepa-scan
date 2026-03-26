@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Python virtual environment
+backend/venv/
+backend/chroma_db/
+backend/.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
