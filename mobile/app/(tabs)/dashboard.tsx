@@ -14,6 +14,7 @@ import { storage, ScanResult } from "@/lib/storage";
 import ChatModal from "@/components/ChatModal";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@/context/ThemeContext";
 
 interface FeatureCard {
   titleKey: string;
@@ -23,50 +24,6 @@ interface FeatureCard {
   bgColor: string;
   action: "scan" | "action-plan" | "chat" | "learning";
   badgeKey?: string;
-}
-
-const featureCards: FeatureCard[] = [
-  {
-    titleKey: "dashboard.readinessScan",
-    descriptionKey: "scan.subtitle",
-    icon: "search-circle",
-    color: "#1a5276",
-    bgColor: "#eff6ff",
-    action: "scan",
-  },
-  {
-    titleKey: "dashboard.actionPlan",
-    descriptionKey: "actionPlan.subtitle",
-    icon: "list-circle",
-    color: "#27ae60",
-    bgColor: "#f0fdf4",
-    action: "action-plan",
-  },
-  {
-    titleKey: "dashboard.aiAssistant",
-    descriptionKey: "chat.subtitle",
-    icon: "chatbubble-ellipses",
-    color: "#7c3aed",
-    bgColor: "#f5f3ff",
-    action: "chat",
-  },
-  {
-    titleKey: "dashboard.learningHub",
-    descriptionKey: "learning.subtitle",
-    icon: "school",
-    color: "#d97706",
-    bgColor: "#fffbeb",
-    action: "learning",
-    badgeKey: "dashboard.comingSoon",
-  },
-];
-
-function getRiskColor(riskLevel: string): string {
-  const l = riskLevel?.toLowerCase();
-  if (l === "hoch" || l === "high") return "#e74c3c";
-  if (l === "mittel" || l === "medium") return "#f39c12";
-  if (l === "niedrig" || l === "low") return "#27ae60";
-  return "#9ca3af";
 }
 
 function formatDate(iso: string): string {
@@ -84,10 +41,55 @@ function formatDate(iso: string): string {
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const { user } = useAuth();
   const router = useRouter();
   const [chatVisible, setChatVisible] = useState(false);
   const [lastScan, setLastScan] = useState<ScanResult | null>(null);
+
+  const featureCards: FeatureCard[] = [
+    {
+      titleKey: "dashboard.readinessScan",
+      descriptionKey: "scan.subtitle",
+      icon: "search-circle",
+      color: colors.primary,
+      bgColor: colors.primary + "1A",
+      action: "scan",
+    },
+    {
+      titleKey: "dashboard.actionPlan",
+      descriptionKey: "actionPlan.subtitle",
+      icon: "list-circle",
+      color: colors.success,
+      bgColor: colors.success + "1A",
+      action: "action-plan",
+    },
+    {
+      titleKey: "dashboard.aiAssistant",
+      descriptionKey: "chat.subtitle",
+      icon: "chatbubble-ellipses",
+      color: colors.secondary,
+      bgColor: colors.secondary + "1A",
+      action: "chat",
+    },
+    {
+      titleKey: "dashboard.learningHub",
+      descriptionKey: "learning.subtitle",
+      icon: "school",
+      color: colors.accent,
+      bgColor: colors.accent + "1A",
+      action: "learning",
+      badgeKey: "dashboard.comingSoon",
+    },
+  ];
+
+  function getRiskColor(riskLevel: string): string {
+    const l = riskLevel?.toLowerCase();
+    if (l === "hoch" || l === "high") return colors.error;
+    if (l === "mittel" || l === "medium") return colors.warning;
+    if (l === "niedrig" || l === "low") return colors.success;
+    return colors.textSecondary;
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -126,16 +128,16 @@ export default function DashboardScreen() {
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
-      <ScrollView style={{ flex: 1, backgroundColor: "#f9fafb" }}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primaryStrong} />
+      <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Header */}
-        <View style={{ backgroundColor: "#1a5276", paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: 24 }}>
-          <Text style={{ color: "#93c5fd", fontSize: 13, fontWeight: "500" }}>{t("dashboard.welcome")},</Text>
-          <Text style={{ color: "#fff", fontSize: 26, fontWeight: "bold", marginTop: 2, letterSpacing: -0.5 }}>
+        <View style={{ backgroundColor: colors.primaryStrong, paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: 24 }}>
+          <Text style={{ color: colors.onPrimary + "AA", fontSize: 13, fontWeight: "500" }}>{t("dashboard.welcome")},</Text>
+          <Text style={{ color: colors.onPrimary, fontSize: 26, fontWeight: "bold", marginTop: 2, letterSpacing: -0.5 }}>
             {displayName}!
           </Text>
           {user?.company && (
-            <Text style={{ color: "#bfdbfe", fontSize: 13, marginTop: 3 }}>{user.company}</Text>
+            <Text style={{ color: colors.onPrimary + "66", fontSize: 13, marginTop: 3 }}>{user.company}</Text>
           )}
 
           <View
@@ -143,15 +145,15 @@ export default function DashboardScreen() {
               flexDirection: "row",
               alignItems: "center",
               marginTop: 14,
-              backgroundColor: "rgba(255,255,255,0.12)",
+              backgroundColor: colors.onPrimary + "1F",
               borderRadius: 20,
               paddingHorizontal: 12,
               paddingVertical: 7,
               alignSelf: "flex-start",
             }}
           >
-            <Ionicons name="shield-checkmark" size={13} color="#93c5fd" />
-            <Text style={{ color: "#bfdbfe", fontSize: 12, marginLeft: 6, fontWeight: "500" }}>
+            <Ionicons name="shield-checkmark" size={13} color={colors.onPrimary + "AA"} />
+            <Text style={{ color: colors.onPrimary + "66", fontSize: 12, marginLeft: 6, fontWeight: "500" }}>
               {t("dashboard.tagline")}
             </Text>
           </View>
@@ -163,7 +165,7 @@ export default function DashboardScreen() {
             style={{
               marginHorizontal: 20,
               marginTop: -20,
-              backgroundColor: "#fff",
+              backgroundColor: colors.card,
               borderRadius: 20,
               padding: 16,
               shadowColor: "#000",
@@ -176,18 +178,18 @@ export default function DashboardScreen() {
           >
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 11, color: "#9ca3af", fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase" }}>
+                <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase" }}>
                   {t("dashboard.lastScan")}
                 </Text>
-                <Text style={{ fontSize: 15, color: "#1f2937", fontWeight: "700", marginTop: 3 }}>
+                <Text style={{ fontSize: 15, color: colors.text, fontWeight: "700", marginTop: 3 }}>
                   {lastScan.company_name}
                 </Text>
-                <Text style={{ fontSize: 12, color: "#6b7280", marginTop: 1 }}>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>
                   {lastScan.product_type}
                 </Text>
               </View>
               <View style={{ alignItems: "center" }}>
-                <Text style={{ fontSize: 36, fontWeight: "bold", color: "#1a5276", lineHeight: 40 }}>
+                <Text style={{ fontSize: 36, fontWeight: "bold", color: colors.primary, lineHeight: 40 }}>
                   {lastScan.score}
                 </Text>
                 <View
@@ -206,16 +208,16 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTopWidth: 1, borderTopColor: "#f3f4f6" }}>
-              <Text style={{ fontSize: 11, color: "#9ca3af" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.surfaceAlt }}>
+              <Text style={{ fontSize: 11, color: colors.textSecondary }}>
                 {formatDate(lastScan.created_at)}
               </Text>
               <TouchableOpacity
                 style={{ flexDirection: "row", alignItems: "center" }}
                 onPress={() => router.push("/(tabs)/action-plan")}
               >
-                <Text style={{ color: "#1a5276", fontSize: 13, fontWeight: "600" }}>{t("dashboard.actionPlan")}</Text>
-                <Ionicons name="chevron-forward" size={14} color="#1a5276" style={{ marginLeft: 2 }} />
+                <Text style={{ color: colors.secondary, fontSize: 13, fontWeight: "600" }}>{t("dashboard.actionPlan")}</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.secondary} style={{ marginLeft: 2 }} />
               </TouchableOpacity>
             </View>
           </View>
@@ -224,7 +226,7 @@ export default function DashboardScreen() {
             style={{
               marginHorizontal: 20,
               marginTop: -20,
-              backgroundColor: "#fff",
+              backgroundColor: colors.card,
               borderRadius: 20,
               padding: 20,
               shadowColor: "#000",
@@ -236,16 +238,16 @@ export default function DashboardScreen() {
               alignItems: "center",
             }}
           >
-            <Ionicons name="search-circle-outline" size={40} color="#9ca3af" />
-            <Text style={{ color: "#374151", fontWeight: "600", fontSize: 15, marginTop: 10 }}>
+            <Ionicons name="search-circle-outline" size={40} color={colors.textSecondary} />
+            <Text style={{ color: colors.text, fontWeight: "600", fontSize: 15, marginTop: 10 }}>
               {t("dashboard.noScan")}
             </Text>
-            <Text style={{ color: "#9ca3af", fontSize: 12, textAlign: "center", marginTop: 4, lineHeight: 18 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: "center", marginTop: 4, lineHeight: 18 }}>
               {t("dashboard.aboutText")}
             </Text>
             <TouchableOpacity
               style={{
-                backgroundColor: "#1a5276",
+                backgroundColor: colors.primary,
                 borderRadius: 10,
                 paddingHorizontal: 24,
                 paddingVertical: 10,
@@ -253,14 +255,14 @@ export default function DashboardScreen() {
               }}
               onPress={() => router.push("/(tabs)/scan")}
             >
-              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>{t("dashboard.startScan")}</Text>
+              <Text style={{ color: colors.buttonText, fontWeight: "700", fontSize: 14 }}>{t("dashboard.startScan")}</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Feature Cards */}
         <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
-          <Text style={{ color: "#6b7280", fontWeight: "600", fontSize: 11, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 12 }}>
+          <Text style={{ color: colors.textSecondary, fontWeight: "600", fontSize: 11, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 12 }}>
             {t("dashboard.features")}
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
@@ -268,7 +270,7 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 key={card.titleKey}
                 style={{
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.card,
                   borderRadius: 18,
                   padding: 16,
                   width: "47%",
@@ -294,14 +296,14 @@ export default function DashboardScreen() {
                 >
                   <Ionicons name={card.icon} size={24} color={card.color} />
                 </View>
-                <Text style={{ color: "#1f2937", fontWeight: "700", fontSize: 13 }}>{t(card.titleKey)}</Text>
-                <Text style={{ color: "#6b7280", fontSize: 11, marginTop: 3, lineHeight: 16 }}>
+                <Text style={{ color: colors.text, fontWeight: "700", fontSize: 13 }}>{t(card.titleKey)}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 3, lineHeight: 16 }}>
                   {t(card.descriptionKey)}
                 </Text>
                 {card.badgeKey && (
                   <View
                     style={{
-                      backgroundColor: "#fef3c7",
+                      backgroundColor: colors.accent + "1A",
                       borderRadius: 8,
                       paddingHorizontal: 7,
                       paddingVertical: 3,
@@ -309,7 +311,7 @@ export default function DashboardScreen() {
                       alignSelf: "flex-start",
                     }}
                   >
-                    <Text style={{ fontSize: 10, color: "#92400e", fontWeight: "600" }}>{t(card.badgeKey)}</Text>
+                    <Text style={{ fontSize: 10, color: colors.accent, fontWeight: "600" }}>{t(card.badgeKey)}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -323,7 +325,7 @@ export default function DashboardScreen() {
             marginHorizontal: 20,
             marginTop: 20,
             marginBottom: 32,
-            backgroundColor: "#fff",
+            backgroundColor: colors.card,
             borderRadius: 18,
             padding: 16,
             shadowColor: "#000",
@@ -333,16 +335,16 @@ export default function DashboardScreen() {
             elevation: 2,
           }}
         >
-          <Text style={{ fontSize: 11, color: "#9ca3af", fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 8 }}>
+          <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 8 }}>
             {t("dashboard.about")}
           </Text>
-          <Text style={{ color: "#374151", fontSize: 13, lineHeight: 20 }}>
+          <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>
             {t("dashboard.aboutText")}
           </Text>
           <View style={{ flexDirection: "row", marginTop: 14, gap: 10 }}>
-            <StatBox value="6+" label={t("dashboard.statRegs")} color="#1a5276" bg="#eff6ff" />
-            <StatBox value="KI" label={t("dashboard.statAi")} color="#27ae60" bg="#f0fdf4" />
-            <StatBox value="24/7" label={t("dashboard.statAvailable")} color="#d97706" bg="#fffbeb" />
+            <StatBox value="6+" label={t("dashboard.statRegs")} color={colors.primary} bg={colors.primary + "1A"} />
+            <StatBox value="KI" label={t("dashboard.statAi")} color={colors.secondary} bg={colors.secondary + "1A"} />
+            <StatBox value="24/7" label={t("dashboard.statAvailable")} color={colors.accent} bg={colors.accent + "1A"} />
           </View>
         </View>
       </ScrollView>
@@ -353,10 +355,11 @@ export default function DashboardScreen() {
 }
 
 function StatBox({ value, label, color, bg }: { value: string; label: string; color: string; bg: string }) {
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1, backgroundColor: bg, borderRadius: 12, padding: 10, alignItems: "center" }}>
       <Text style={{ color, fontSize: 18, fontWeight: "bold" }}>{value}</Text>
-      <Text style={{ color: "#6b7280", fontSize: 11, textAlign: "center", marginTop: 2 }}>{label}</Text>
+      <Text style={{ color: colors.textSecondary, fontSize: 11, textAlign: "center", marginTop: 2 }}>{label}</Text>
     </View>
   );
 }

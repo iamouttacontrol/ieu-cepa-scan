@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@/context/ThemeContext";
 
 const SECTORS = [
   "Herstellung",
@@ -33,6 +34,7 @@ type Tab = "login" | "register";
 export default function AuthScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<Tab>("login");
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
@@ -50,13 +52,25 @@ export default function AuthScreen() {
   const [regSector, setRegSector] = useState(SECTORS[0]);
   const [showSectorPicker, setShowSectorPicker] = useState(false);
 
+  const inputStyle = {
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    color: colors.text,
+    fontSize: 16,
+    backgroundColor: colors.inputBackground,
+    marginBottom: 16,
+  };
+
   const handleLogin = async () => {
     if (!loginEmail.trim()) {
-      Alert.alert("Fehler", "Bitte E-Mail-Adresse eingeben.");
+      Alert.alert(t("auth.error"), t("auth.emailRequired"));
       return;
     }
     if (!loginPassword.trim()) {
-      Alert.alert("Fehler", "Bitte Passwort eingeben.");
+      Alert.alert(t("auth.error"), t("auth.passwordRequired"));
       return;
     }
     setLoading(true);
@@ -64,7 +78,7 @@ export default function AuthScreen() {
       await login(loginEmail.trim(), loginPassword);
       router.replace("/(tabs)/dashboard");
     } catch {
-      Alert.alert("Anmeldung fehlgeschlagen", "Bitte versuche es erneut.");
+      Alert.alert(t("auth.loginFailed"), t("auth.tryAgain"));
     } finally {
       setLoading(false);
     }
@@ -72,23 +86,23 @@ export default function AuthScreen() {
 
   const handleRegister = async () => {
     if (!regName.trim()) {
-      Alert.alert("Fehler", "Bitte vollständigen Namen eingeben.");
+      Alert.alert(t("auth.error"), t("auth.nameRequired"));
       return;
     }
     if (!regEmail.trim()) {
-      Alert.alert("Fehler", "Bitte E-Mail-Adresse eingeben.");
+      Alert.alert(t("auth.error"), t("auth.emailRequired"));
       return;
     }
     if (!regEmail.includes("@")) {
-      Alert.alert("Fehler", "Bitte eine gültige E-Mail-Adresse eingeben.");
+      Alert.alert(t("auth.error"), t("auth.emailInvalid"));
       return;
     }
     if (regPassword.length < 6) {
-      Alert.alert("Fehler", "Das Passwort muss mindestens 6 Zeichen lang sein.");
+      Alert.alert(t("auth.error"), t("auth.passwordTooShort"));
       return;
     }
     if (!regCompany.trim()) {
-      Alert.alert("Fehler", "Bitte Unternehmensname eingeben.");
+      Alert.alert(t("auth.error"), t("auth.companyRequired"));
       return;
     }
     setLoading(true);
@@ -102,7 +116,7 @@ export default function AuthScreen() {
       });
       router.replace("/(tabs)/dashboard");
     } catch {
-      Alert.alert("Registrierung fehlgeschlagen", "Bitte versuche es erneut.");
+      Alert.alert(t("auth.registerFailed"), t("auth.tryAgain"));
     } finally {
       setLoading(false);
     }
@@ -110,9 +124,9 @@ export default function AuthScreen() {
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
+      <StatusBar barStyle="light-content" backgroundColor={colors.primaryStrong} />
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: "#fff" }}
+        style={{ flex: 1, backgroundColor: colors.surface }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
@@ -123,7 +137,7 @@ export default function AuthScreen() {
           {/* Header */}
           <View
             style={{
-              backgroundColor: "#1a5276",
+              backgroundColor: colors.primaryStrong,
               paddingTop: insets.top + 12,
               paddingBottom: 40,
               paddingHorizontal: 24,
@@ -135,18 +149,18 @@ export default function AuthScreen() {
                 width: 72,
                 height: 72,
                 borderRadius: 20,
-                backgroundColor: "rgba(255,255,255,0.2)",
+                backgroundColor: colors.onPrimary + "33",
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 16,
               }}
             >
-              <Ionicons name="shield-checkmark" size={36} color="#fff" />
+              <Ionicons name="shield-checkmark" size={36} color={colors.onPrimary} />
             </View>
-            <Text style={{ color: "#fff", fontSize: 24, fontWeight: "bold", letterSpacing: -0.5 }}>
+            <Text style={{ color: colors.onPrimary, fontSize: 24, fontWeight: "bold", letterSpacing: -0.5 }}>
               Sustainable Supply Academy
             </Text>
-            <Text style={{ color: "#93c5fd", fontSize: 13, marginTop: 4, textAlign: "center" }}>
+            <Text style={{ color: colors.onPrimary + "AA", fontSize: 13, marginTop: 4, textAlign: "center" }}>
               {t("auth.appSubtitle")}
             </Text>
           </View>
@@ -157,7 +171,7 @@ export default function AuthScreen() {
               flexDirection: "row",
               marginHorizontal: 24,
               marginTop: 24,
-              backgroundColor: "#f3f4f6",
+              backgroundColor: colors.surfaceAlt,
               borderRadius: 12,
               padding: 4,
             }}
@@ -168,7 +182,7 @@ export default function AuthScreen() {
                 paddingVertical: 10,
                 borderRadius: 10,
                 alignItems: "center",
-                backgroundColor: activeTab === "login" ? "#fff" : "transparent",
+                backgroundColor: activeTab === "login" ? colors.surface : "transparent",
                 shadowColor: activeTab === "login" ? "#000" : "transparent",
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.1,
@@ -181,7 +195,7 @@ export default function AuthScreen() {
                 style={{
                   fontWeight: "600",
                   fontSize: 14,
-                  color: activeTab === "login" ? "#1a5276" : "#6b7280",
+                  color: activeTab === "login" ? colors.primaryStrong : colors.textSecondary,
                 }}
               >
                 {t("auth.login")}
@@ -193,7 +207,7 @@ export default function AuthScreen() {
                 paddingVertical: 10,
                 borderRadius: 10,
                 alignItems: "center",
-                backgroundColor: activeTab === "register" ? "#fff" : "transparent",
+                backgroundColor: activeTab === "register" ? colors.surface : "transparent",
                 shadowColor: activeTab === "register" ? "#000" : "transparent",
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 0.1,
@@ -206,7 +220,7 @@ export default function AuthScreen() {
                 style={{
                   fontWeight: "600",
                   fontSize: 14,
-                  color: activeTab === "register" ? "#1a5276" : "#6b7280",
+                  color: activeTab === "register" ? colors.primaryStrong : colors.textSecondary,
                 }}
               >
                 {t("auth.register")}
@@ -218,11 +232,11 @@ export default function AuthScreen() {
           <View style={{ paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40 }}>
             {activeTab === "login" ? (
               <View>
-                <FormLabel text={t("auth.email")} />
+                <FormLabel text={t("auth.email")} color={colors.text} />
                 <TextInput
                   style={inputStyle}
-                  placeholder="deine@email.com"
-                  placeholderTextColor="#9ca3af"
+                  placeholder={t("auth.emailPlaceholder")}
+                  placeholderTextColor={colors.placeholder}
                   value={loginEmail}
                   onChangeText={setLoginEmail}
                   keyboardType="email-address"
@@ -230,11 +244,11 @@ export default function AuthScreen() {
                   autoCorrect={false}
                 />
 
-                <FormLabel text={t("auth.password")} />
+                <FormLabel text={t("auth.password")} color={colors.text} />
                 <TextInput
                   style={[inputStyle, { marginBottom: 24 }]}
-                  placeholder="Mindestens 6 Zeichen"
-                  placeholderTextColor="#9ca3af"
+                  placeholder={t("auth.passwordPlaceholder")}
+                  placeholderTextColor={colors.placeholder}
                   value={loginPassword}
                   onChangeText={setLoginPassword}
                   secureTextEntry
@@ -242,7 +256,7 @@ export default function AuthScreen() {
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: "#1a5276",
+                    backgroundColor: colors.primary,
                     borderRadius: 12,
                     paddingVertical: 16,
                     alignItems: "center",
@@ -251,18 +265,18 @@ export default function AuthScreen() {
                   disabled={loading}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={colors.onPrimary} />
                   ) : (
-                    <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
+                    <Text style={{ color: colors.buttonText, fontWeight: "bold", fontSize: 16 }}>
                       {t("auth.loginBtn")}
                     </Text>
                   )}
                 </TouchableOpacity>
 
-                <Text style={{ textAlign: "center", color: "#6b7280", fontSize: 13, marginTop: 16 }}>
+                <Text style={{ textAlign: "center", color: colors.textSecondary, fontSize: 13, marginTop: 16 }}>
                   {t("auth.noAccount")}{" "}
                   <Text
-                    style={{ color: "#1a5276", fontWeight: "600" }}
+                    style={{ color: colors.secondary, fontWeight: "600" }}
                     onPress={() => setActiveTab("register")}
                   >
                     {t("auth.registerBtn")}
@@ -271,21 +285,21 @@ export default function AuthScreen() {
               </View>
             ) : (
               <View>
-                <FormLabel text={t("auth.name") + " *"} />
+                <FormLabel text={t("auth.name") + " *"} color={colors.text} />
                 <TextInput
                   style={inputStyle}
-                  placeholder="Dein Name"
-                  placeholderTextColor="#9ca3af"
+                  placeholder={t("auth.namePlaceholder")}
+                  placeholderTextColor={colors.placeholder}
                   value={regName}
                   onChangeText={setRegName}
                   autoCapitalize="words"
                 />
 
-                <FormLabel text={t("auth.email") + " *"} />
+                <FormLabel text={t("auth.email") + " *"} color={colors.text} />
                 <TextInput
                   style={inputStyle}
-                  placeholder="deine@email.com"
-                  placeholderTextColor="#9ca3af"
+                  placeholder={t("auth.emailPlaceholder")}
+                  placeholderTextColor={colors.placeholder}
                   value={regEmail}
                   onChangeText={setRegEmail}
                   keyboardType="email-address"
@@ -293,26 +307,26 @@ export default function AuthScreen() {
                   autoCorrect={false}
                 />
 
-                <FormLabel text={t("auth.password") + " *"} />
+                <FormLabel text={t("auth.password") + " *"} color={colors.text} />
                 <TextInput
                   style={inputStyle}
-                  placeholder="Mindestens 6 Zeichen"
-                  placeholderTextColor="#9ca3af"
+                  placeholder={t("auth.passwordPlaceholder")}
+                  placeholderTextColor={colors.placeholder}
                   value={regPassword}
                   onChangeText={setRegPassword}
                   secureTextEntry
                 />
 
-                <FormLabel text={t("auth.company") + " *"} />
+                <FormLabel text={t("auth.company") + " *"} color={colors.text} />
                 <TextInput
                   style={inputStyle}
-                  placeholder="Name deines Unternehmens"
-                  placeholderTextColor="#9ca3af"
+                  placeholder={t("auth.companyPlaceholder")}
+                  placeholderTextColor={colors.placeholder}
                   value={regCompany}
                   onChangeText={setRegCompany}
                 />
 
-                <FormLabel text={t("auth.sector") + " *"} />
+                <FormLabel text={t("auth.sector") + " *"} color={colors.text} />
                 <TouchableOpacity
                   style={[
                     inputStyle,
@@ -320,11 +334,11 @@ export default function AuthScreen() {
                   ]}
                   onPress={() => setShowSectorPicker(!showSectorPicker)}
                 >
-                  <Text style={{ color: "#111827", fontSize: 16 }}>{regSector}</Text>
+                  <Text style={{ color: colors.text, fontSize: 16 }}>{regSector}</Text>
                   <Ionicons
                     name={showSectorPicker ? "chevron-up" : "chevron-down"}
                     size={16}
-                    color="#6b7280"
+                    color={colors.textSecondary}
                   />
                 </TouchableOpacity>
 
@@ -332,10 +346,10 @@ export default function AuthScreen() {
                   <View
                     style={{
                       borderWidth: 1,
-                      borderColor: "#e5e7eb",
+                      borderColor: colors.border,
                       borderRadius: 12,
                       marginBottom: 16,
-                      backgroundColor: "#fff",
+                      backgroundColor: colors.surface,
                       overflow: "hidden",
                     }}
                   >
@@ -345,9 +359,9 @@ export default function AuthScreen() {
                         style={{
                           paddingHorizontal: 16,
                           paddingVertical: 12,
-                          backgroundColor: regSector === sector ? "#eff6ff" : "#fff",
+                          backgroundColor: regSector === sector ? colors.secondary + "1A" : colors.surface,
                           borderBottomWidth: idx < SECTORS.length - 1 ? 1 : 0,
-                          borderBottomColor: "#f3f4f6",
+                          borderBottomColor: colors.surfaceAlt,
                         }}
                         onPress={() => {
                           setRegSector(sector);
@@ -357,7 +371,7 @@ export default function AuthScreen() {
                         <Text
                           style={{
                             fontSize: 15,
-                            color: regSector === sector ? "#1a5276" : "#374151",
+                            color: regSector === sector ? colors.secondary : colors.text,
                             fontWeight: regSector === sector ? "600" : "400",
                           }}
                         >
@@ -370,7 +384,7 @@ export default function AuthScreen() {
 
                 <TouchableOpacity
                   style={{
-                    backgroundColor: "#1a5276",
+                    backgroundColor: colors.primary,
                     borderRadius: 12,
                     paddingVertical: 16,
                     alignItems: "center",
@@ -380,18 +394,18 @@ export default function AuthScreen() {
                   disabled={loading}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={colors.onPrimary} />
                   ) : (
-                    <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>
+                    <Text style={{ color: colors.buttonText, fontWeight: "bold", fontSize: 16 }}>
                       {t("auth.registerBtn")}
                     </Text>
                   )}
                 </TouchableOpacity>
 
-                <Text style={{ textAlign: "center", color: "#6b7280", fontSize: 13, marginTop: 16 }}>
+                <Text style={{ textAlign: "center", color: colors.textSecondary, fontSize: 13, marginTop: 16 }}>
                   {t("auth.hasAccount")}{" "}
                   <Text
-                    style={{ color: "#1a5276", fontWeight: "600" }}
+                    style={{ color: colors.secondary, fontWeight: "600" }}
                     onPress={() => setActiveTab("login")}
                   >
                     {t("auth.loginBtn")}
@@ -406,24 +420,12 @@ export default function AuthScreen() {
   );
 }
 
-function FormLabel({ text }: { text: string }) {
+function FormLabel({ text, color }: { text: string; color: string }) {
   return (
     <Text
-      style={{ color: "#374151", fontWeight: "600", fontSize: 13, marginBottom: 6 }}
+      style={{ color, fontWeight: "600", fontSize: 13, marginBottom: 6 }}
     >
       {text}
     </Text>
   );
 }
-
-const inputStyle = {
-  borderWidth: 1,
-  borderColor: "#d1d5db",
-  borderRadius: 12,
-  paddingHorizontal: 16,
-  paddingVertical: 13,
-  color: "#111827",
-  fontSize: 16,
-  backgroundColor: "#f9fafb",
-  marginBottom: 16,
-};

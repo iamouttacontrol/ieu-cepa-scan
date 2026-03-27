@@ -16,6 +16,7 @@ import { storage, ScanResult } from "@/lib/storage";
 import { useTranslation } from "react-i18next";
 import i18n from "@/lib/i18n";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@/context/ThemeContext";
 
 const LANGUAGES = [
   { code: "de", label: "Deutsch", flag: "🇩🇪" },
@@ -26,6 +27,7 @@ const LANGUAGES = [
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { colors, mode, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const router = useRouter();
   const [scans, setScans] = useState<ScanResult[]>([]);
@@ -74,14 +76,24 @@ export default function ProfileScreen() {
   const totalActionItems = scans.reduce((acc, s) => acc + s.action_plan.length, 0);
   const lastScore = scans.length > 0 ? scans[0].score : null;
 
+  const iconBoxStyle = {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginRight: 12,
+  };
+
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
-      <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primaryStrong} />
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Header */}
         <View
           style={{
-            backgroundColor: "#1a5276",
+            backgroundColor: colors.primaryStrong,
             paddingTop: insets.top + 12,
             paddingBottom: 20,
             paddingHorizontal: 20,
@@ -93,26 +105,26 @@ export default function ProfileScreen() {
               width: 80,
               height: 80,
               borderRadius: 40,
-              backgroundColor: "rgba(255,255,255,0.2)",
+              backgroundColor: colors.onPrimary + "33",
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 12,
               borderWidth: 2,
-              borderColor: "rgba(255,255,255,0.4)",
+              borderColor: colors.onPrimary + "66",
             }}
           >
-            <Text style={{ color: "#fff", fontSize: 30, fontWeight: "bold" }}>{initials}</Text>
+            <Text style={{ color: colors.onPrimary, fontSize: 30, fontWeight: "bold" }}>{initials}</Text>
           </View>
-          <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>
+          <Text style={{ color: colors.onPrimary, fontSize: 20, fontWeight: "bold" }}>
             {user?.name ?? "–"}
           </Text>
-          <Text style={{ color: "#93c5fd", fontSize: 13, marginTop: 3 }}>
+          <Text style={{ color: colors.onPrimary + "AA", fontSize: 13, marginTop: 3 }}>
             {user?.email ?? "–"}
           </Text>
           {user?.company ? (
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
-              <Ionicons name="business-outline" size={13} color="#bfdbfe" />
-              <Text style={{ color: "#bfdbfe", fontSize: 12, marginLeft: 5 }}>
+              <Ionicons name="business-outline" size={13} color={colors.onPrimary + "66"} />
+              <Text style={{ color: colors.onPrimary + "66", fontSize: 12, marginLeft: 5 }}>
                 {user.company} · {user.sector}
               </Text>
             </View>
@@ -123,20 +135,20 @@ export default function ProfileScreen() {
             <StatCard
               value={String(scans.length)}
               label={t("profile.scans")}
-              color="#1a5276"
-              bg="#eff6ff"
+              color={colors.primary}
+              bg={colors.primary + "1A"}
             />
             <StatCard
               value={String(totalActionItems)}
               label={t("profile.actionItems")}
-              color="#27ae60"
-              bg="#f0fdf4"
+              color={colors.secondary}
+              bg={colors.secondary + "1A"}
             />
             <StatCard
               value={lastScore !== null ? String(lastScore) : "–"}
               label={t("profile.lastScore")}
-              color="#d97706"
-              bg="#fffbeb"
+              color={colors.accent}
+              bg={colors.accent + "1A"}
             />
           </View>
         </View>
@@ -152,13 +164,31 @@ export default function ProfileScreen() {
 
           {/* Settings */}
           <SectionCard title={t("profile.settings")}>
+            {/* Dark/Light Mode Toggle */}
+            <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <View style={iconBoxStyle}>
+                <Ionicons name={mode === "dark" ? "moon" : "sunny"} size={17} color={colors.textSecondary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text, fontWeight: "500", fontSize: 14 }}>
+                  {mode === "dark" ? t("profile.darkMode") : t("profile.lightMode")}
+                </Text>
+              </View>
+              <Switch
+                value={mode === "dark"}
+                onValueChange={toggleTheme}
+                trackColor={{ false: colors.border, true: colors.primary + "80" }}
+                thumbColor={mode === "dark" ? colors.primary : colors.surface}
+              />
+            </View>
+
             {/* Language Switcher */}
-            <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#f3f4f6" }}>
+            <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
                 <View style={iconBoxStyle}>
-                  <Ionicons name="language-outline" size={17} color="#6b7280" />
+                  <Ionicons name="language-outline" size={17} color={colors.textSecondary} />
                 </View>
-                <Text style={{ color: "#1f2937", fontWeight: "500", fontSize: 14 }}>{t("profile.language")}</Text>
+                <Text style={{ color: colors.text, fontWeight: "500", fontSize: 14 }}>{t("profile.language")}</Text>
               </View>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 {LANGUAGES.map((lang) => {
@@ -173,8 +203,8 @@ export default function ProfileScreen() {
                         borderRadius: 10,
                         alignItems: "center",
                         borderWidth: 1.5,
-                        backgroundColor: isActive ? "#1a5276" : "#f9fafb",
-                        borderColor: isActive ? "#1a5276" : "#e5e7eb",
+                        backgroundColor: isActive ? colors.primaryStrong : colors.background,
+                        borderColor: isActive ? colors.primaryStrong : colors.border,
                       }}
                       onPress={() => handleLanguageChange(lang.code)}
                       activeOpacity={0.75}
@@ -184,7 +214,7 @@ export default function ProfileScreen() {
                         style={{
                           fontSize: 11,
                           fontWeight: "600",
-                          color: isActive ? "#fff" : "#6b7280",
+                          color: isActive ? colors.onPrimary : colors.textSecondary,
                         }}
                       >
                         {lang.label}
@@ -197,19 +227,19 @@ export default function ProfileScreen() {
 
             <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12 }}>
               <View style={iconBoxStyle}>
-                <Ionicons name="notifications-outline" size={17} color="#6b7280" />
+                <Ionicons name="notifications-outline" size={17} color={colors.textSecondary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: "#1f2937", fontWeight: "500", fontSize: 14 }}>{t("profile.notifications")}</Text>
-                <Text style={{ color: "#9ca3af", fontSize: 12 }}>
+                <Text style={{ color: colors.text, fontWeight: "500", fontSize: 14 }}>{t("profile.notifications")}</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
                   {notificationsEnabled ? t("common.enabled") : "–"}
                 </Text>
               </View>
               <Switch
                 value={notificationsEnabled}
                 onValueChange={setNotificationsEnabled}
-                trackColor={{ false: "#d1d5db", true: "#93c5fd" }}
-                thumbColor={notificationsEnabled ? "#1a5276" : "#f4f4f4"}
+                trackColor={{ false: colors.border, true: colors.onPrimary + "AA" }}
+                thumbColor={notificationsEnabled ? colors.primary : colors.surfaceAlt}
               />
             </View>
           </SectionCard>
@@ -218,36 +248,14 @@ export default function ProfileScreen() {
           <SectionCard title={t("profile.appInfo")}>
             <ProfileRow icon="information-circle-outline" label={t("profile.version")} value="1.0.0" />
             <ProfileRow icon="server-outline" label={t("profile.backend")} value="localhost:8000" />
-            <ProfileRow icon="shield-checkmark-outline" label={t("profile.storage")} value="Lokal (AsyncStorage)" last />
+            <ProfileRow icon="shield-checkmark-outline" label={t("profile.storage")} value={t("profile.storageValue")} last />
           </SectionCard>
 
           {/* Scan History (last 3) */}
           {scans.length > 0 && (
             <SectionCard title={`${t("profile.scanHistory")} (${scans.length})`}>
               {scans.slice(0, 3).map((scan, idx) => (
-                <View
-                  key={scan.id}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    borderBottomWidth: idx < Math.min(scans.length, 3) - 1 ? 1 : 0,
-                    borderBottomColor: "#f3f4f6",
-                    flexDirection: "row",
-                    alignItems: "center",
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: "#1f2937", fontWeight: "600", fontSize: 13 }}>
-                      {scan.company_name}
-                    </Text>
-                    <Text style={{ color: "#9ca3af", fontSize: 12, marginTop: 1 }}>
-                      {scan.product_type} · {new Date(scan.created_at).toLocaleDateString("de-DE")}
-                    </Text>
-                  </View>
-                  <Text style={{ color: "#1a5276", fontWeight: "bold", fontSize: 18 }}>
-                    {scan.score}
-                  </Text>
-                </View>
+                <ScanHistoryRow key={scan.id} scan={scan} idx={idx} total={Math.min(scans.length, 3)} />
               ))}
             </SectionCard>
           )}
@@ -256,9 +264,9 @@ export default function ProfileScreen() {
           <View style={{ marginHorizontal: 20, marginBottom: 40, marginTop: 4 }}>
             <TouchableOpacity
               style={{
-                backgroundColor: "#fef2f2",
+                backgroundColor: colors.error + "1A",
                 borderWidth: 1,
-                borderColor: "#fecaca",
+                borderColor: colors.error + "40",
                 borderRadius: 16,
                 paddingVertical: 16,
                 alignItems: "center",
@@ -269,8 +277,8 @@ export default function ProfileScreen() {
               onPress={handleLogout}
               activeOpacity={0.8}
             >
-              <Ionicons name="log-out-outline" size={20} color="#e74c3c" />
-              <Text style={{ color: "#e74c3c", fontWeight: "bold", fontSize: 16 }}>{t("profile.logout")}</Text>
+              <Ionicons name="log-out-outline" size={20} color={colors.error} />
+              <Text style={{ color: colors.error, fontWeight: "bold", fontSize: 16 }}>{t("profile.logout")}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -281,12 +289,41 @@ export default function ProfileScreen() {
 
 // ─── Subcomponents ────────────────────────────────────────────────────────────
 
+function ScanHistoryRow({ scan, idx, total }: { scan: ScanResult; idx: number; total: number }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      style={{
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: idx < total - 1 ? 1 : 0,
+        borderBottomColor: colors.surfaceAlt,
+        flexDirection: "row",
+        alignItems: "center",
+      }}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: colors.text, fontWeight: "600", fontSize: 13 }}>
+          {scan.company_name}
+        </Text>
+        <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>
+          {scan.product_type} · {new Date(scan.created_at).toLocaleDateString("de-DE")}
+        </Text>
+      </View>
+      <Text style={{ color: colors.primary, fontWeight: "bold", fontSize: 18 }}>
+        {scan.score}
+      </Text>
+    </View>
+  );
+}
+
 function StatCard({ value, label, color, bg }: { value: string; label: string; color: string; bg: string }) {
+  const { colors } = useTheme();
   return (
     <View
       style={{
         flex: 1,
-        backgroundColor: "#fff",
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 14,
         alignItems: "center",
@@ -298,17 +335,18 @@ function StatCard({ value, label, color, bg }: { value: string; label: string; c
       }}
     >
       <Text style={{ color, fontSize: 24, fontWeight: "bold" }}>{value}</Text>
-      <Text style={{ color: "#9ca3af", fontSize: 11, textAlign: "center", marginTop: 3 }}>{label}</Text>
+      <Text style={{ color: colors.textSecondary, fontSize: 11, textAlign: "center", marginTop: 3 }}>{label}</Text>
     </View>
   );
 }
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  const { colors } = useTheme();
   return (
     <View
       style={{
         marginHorizontal: 20,
-        backgroundColor: "#fff",
+        backgroundColor: colors.card,
         borderRadius: 16,
         marginBottom: 14,
         shadowColor: "#000",
@@ -322,7 +360,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
       <Text
         style={{
           fontSize: 11,
-          color: "#9ca3af",
+          color: colors.textSecondary,
           fontWeight: "600",
           letterSpacing: 0.5,
           textTransform: "uppercase",
@@ -346,6 +384,16 @@ interface ProfileRowProps {
 }
 
 function ProfileRow({ icon, label, value, last = false }: ProfileRowProps) {
+  const { colors } = useTheme();
+  const iconBoxStyle = {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginRight: 12,
+  };
   return (
     <View
       style={{
@@ -354,26 +402,16 @@ function ProfileRow({ icon, label, value, last = false }: ProfileRowProps) {
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: last ? 0 : 1,
-        borderBottomColor: "#f3f4f6",
+        borderBottomColor: colors.surfaceAlt,
       }}
     >
       <View style={iconBoxStyle}>
-        <Ionicons name={icon} size={16} color="#6b7280" />
+        <Ionicons name={icon} size={16} color={colors.textSecondary} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: "#9ca3af", fontSize: 11 }}>{label}</Text>
-        <Text style={{ color: "#1f2937", fontWeight: "500", fontSize: 14, marginTop: 2 }}>{value}</Text>
+        <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{label}</Text>
+        <Text style={{ color: colors.text, fontWeight: "500", fontSize: 14, marginTop: 2 }}>{value}</Text>
       </View>
     </View>
   );
 }
-
-const iconBoxStyle = {
-  width: 34,
-  height: 34,
-  borderRadius: 9,
-  backgroundColor: "#f3f4f6",
-  alignItems: "center" as const,
-  justifyContent: "center" as const,
-  marginRight: 12,
-};

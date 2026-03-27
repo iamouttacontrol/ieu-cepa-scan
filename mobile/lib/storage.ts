@@ -1,10 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { ThemeMode } from "@/colors-indonesia";
 
 const KEYS = {
   USER: "@ieu_cepa:user",
   SCANS: "@ieu_cepa:scans",
   ACTION_COMPLETED: "@ieu_cepa:action_completed", // { [scanId]: boolean[] }
   LANGUAGE: "@ieu_cepa:language",
+  THEME: "@ieu_cepa:theme",
 };
 
 export interface User {
@@ -103,6 +105,22 @@ export const storage = {
   async setLanguage(lang: string): Promise<void> {
     try {
       await AsyncStorage.setItem(KEYS.LANGUAGE, lang);
+    } catch {}
+  },
+
+  // --- Theme ---
+  async getTheme(): Promise<ThemeMode | null> {
+    try {
+      const val = await AsyncStorage.getItem(KEYS.THEME);
+      return val === "dark" || val === "light" ? val : null;
+    } catch {
+      return null;
+    }
+  },
+
+  async setTheme(mode: ThemeMode): Promise<void> {
+    try {
+      await AsyncStorage.setItem(KEYS.THEME, mode);
     } catch {}
   },
 };

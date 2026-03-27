@@ -12,6 +12,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { storage, ScanResult } from "@/lib/storage";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@/context/ThemeContext";
 
 type Priority = "all" | "high" | "medium" | "low";
 
@@ -24,27 +25,6 @@ function getPriorityForIndex(index: number, total: number): Priority {
   return "low";
 }
 
-function getPriorityColor(priority: Priority): string {
-  if (priority === "high") return "#e74c3c";
-  if (priority === "medium") return "#f39c12";
-  if (priority === "low") return "#27ae60";
-  return "#9ca3af";
-}
-
-function getPriorityBg(priority: Priority): string {
-  if (priority === "high") return "#fef2f2";
-  if (priority === "medium") return "#fffbeb";
-  if (priority === "low") return "#f0fdf4";
-  return "#f9fafb";
-}
-
-function getPriorityBorderColor(priority: Priority): string {
-  if (priority === "high") return "#fecaca";
-  if (priority === "medium") return "#fde68a";
-  if (priority === "low") return "#bbf7d0";
-  return "#e5e7eb";
-}
-
 interface ActionItem {
   id: string;
   text: string;
@@ -52,21 +32,43 @@ interface ActionItem {
   completed: boolean;
 }
 
-function getRiskColor(riskLevel: string): string {
-  const l = riskLevel?.toLowerCase();
-  if (l === "hoch" || l === "high") return "#e74c3c";
-  if (l === "mittel" || l === "medium") return "#f39c12";
-  if (l === "niedrig" || l === "low") return "#27ae60";
-  return "#9ca3af";
-}
-
 export default function ActionPlanScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const router = useRouter();
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [filter, setFilter] = useState<Priority>("all");
+
+  function getPriorityColor(priority: Priority): string {
+    if (priority === "high") return colors.error;
+    if (priority === "medium") return colors.warning;
+    if (priority === "low") return colors.success;
+    return colors.textSecondary;
+  }
+
+  function getPriorityBg(priority: Priority): string {
+    if (priority === "high") return colors.error + "1A";
+    if (priority === "medium") return colors.warning + "1A";
+    if (priority === "low") return colors.success + "1A";
+    return colors.background;
+  }
+
+  function getPriorityBorderColor(priority: Priority): string {
+    if (priority === "high") return colors.error + "40";
+    if (priority === "medium") return colors.warning + "40";
+    if (priority === "low") return colors.success + "40";
+    return colors.border;
+  }
+
+  function getRiskColor(riskLevel: string): string {
+    const l = riskLevel?.toLowerCase();
+    if (l === "hoch" || l === "high") return colors.error;
+    if (l === "mittel" || l === "medium") return colors.warning;
+    if (l === "niedrig" || l === "low") return colors.success;
+    return colors.textSecondary;
+  }
 
   const getRiskLabel = (riskLevel: string): string => {
     const l = riskLevel?.toLowerCase();
@@ -142,11 +144,11 @@ export default function ActionPlanScreen() {
   if (!scan) {
     return (
       <>
-        <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
-        <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
-          <View style={{ backgroundColor: "#1a5276", paddingTop: insets.top + 12, paddingBottom: 24, paddingHorizontal: 20 }}>
-            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>{t("actionPlan.title")}</Text>
-            <Text style={{ color: "#93c5fd", fontSize: 12, marginTop: 2 }}>{t("actionPlan.subtitle")}</Text>
+        <StatusBar barStyle="light-content" backgroundColor={colors.primaryStrong} />
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <View style={{ backgroundColor: colors.primaryStrong, paddingTop: insets.top + 12, paddingBottom: 24, paddingHorizontal: 20 }}>
+            <Text style={{ color: colors.onPrimary, fontSize: 20, fontWeight: "bold" }}>{t("actionPlan.title")}</Text>
+            <Text style={{ color: colors.onPrimary + "AA", fontSize: 12, marginTop: 2 }}>{t("actionPlan.subtitle")}</Text>
           </View>
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
             <View
@@ -154,23 +156,23 @@ export default function ActionPlanScreen() {
                 width: 80,
                 height: 80,
                 borderRadius: 40,
-                backgroundColor: "#f3f4f6",
+                backgroundColor: colors.surfaceAlt,
                 alignItems: "center",
                 justifyContent: "center",
                 marginBottom: 16,
               }}
             >
-              <Ionicons name="list-circle-outline" size={44} color="#9ca3af" />
+              <Ionicons name="list-circle-outline" size={44} color={colors.textSecondary} />
             </View>
-            <Text style={{ color: "#1f2937", fontWeight: "bold", fontSize: 18, textAlign: "center" }}>
+            <Text style={{ color: colors.text, fontWeight: "bold", fontSize: 18, textAlign: "center" }}>
               {t("actionPlan.noScan")}
             </Text>
-            <Text style={{ color: "#9ca3af", fontSize: 13, textAlign: "center", marginTop: 8, lineHeight: 20 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: "center", marginTop: 8, lineHeight: 20 }}>
               {t("actionPlan.noScanText")}
             </Text>
             <TouchableOpacity
               style={{
-                backgroundColor: "#1a5276",
+                backgroundColor: colors.primary,
                 borderRadius: 12,
                 paddingHorizontal: 32,
                 paddingVertical: 14,
@@ -178,7 +180,7 @@ export default function ActionPlanScreen() {
               }}
               onPress={() => router.push("/(tabs)/scan")}
             >
-              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 15 }}>{t("common.startScan")}</Text>
+              <Text style={{ color: colors.buttonText, fontWeight: "bold", fontSize: 15 }}>{t("common.startScan")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -189,14 +191,14 @@ export default function ActionPlanScreen() {
   // ── Loaded state ───────────────────────────────────────────────────────────
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
-      <View style={{ flex: 1, backgroundColor: "#f9fafb" }}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primaryStrong} />
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Header */}
-        <View style={{ backgroundColor: "#1a5276", paddingTop: insets.top + 12, paddingBottom: 20, paddingHorizontal: 20 }}>
+        <View style={{ backgroundColor: colors.primaryStrong, paddingTop: insets.top + 12, paddingBottom: 20, paddingHorizontal: 20 }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
             <View>
-              <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold" }}>{t("actionPlan.title")}</Text>
-              <Text style={{ color: "#93c5fd", fontSize: 12, marginTop: 2 }}>
+              <Text style={{ color: colors.onPrimary, fontSize: 20, fontWeight: "bold" }}>{t("actionPlan.title")}</Text>
+              <Text style={{ color: colors.onPrimary + "AA", fontSize: 12, marginTop: 2 }}>
                 {scan.company_name} · {t("common.score")}: {scan.score}
               </Text>
             </View>
@@ -208,7 +210,7 @@ export default function ActionPlanScreen() {
                 backgroundColor: getRiskColor(scan.risk_level) + "33",
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>
+              <Text style={{ color: colors.onPrimary, fontSize: 12, fontWeight: "700" }}>
                 {getRiskLabel(scan.risk_level)}
               </Text>
             </View>
@@ -217,17 +219,17 @@ export default function ActionPlanScreen() {
           {/* Progress bar */}
           <View style={{ marginTop: 14 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
-              <Text style={{ color: "#bfdbfe", fontSize: 11 }}>{t("actionPlan.progress")}</Text>
-              <Text style={{ color: "#fff", fontSize: 11, fontWeight: "600" }}>
+              <Text style={{ color: colors.onPrimary + "66", fontSize: 11 }}>{t("actionPlan.progress")}</Text>
+              <Text style={{ color: colors.onPrimary, fontSize: 11, fontWeight: "600" }}>
                 {completedCount}/{totalCount} {t("actionPlan.completed")} ({progressPercent}%)
               </Text>
             </View>
-            <View style={{ height: 6, backgroundColor: "rgba(255,255,255,0.25)", borderRadius: 3, overflow: "hidden" }}>
+            <View style={{ height: 6, backgroundColor: colors.onPrimary + "40", borderRadius: 3, overflow: "hidden" }}>
               <View
                 style={{
                   height: "100%",
                   width: `${progressPercent}%`,
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.onPrimary,
                   borderRadius: 3,
                 }}
               />
@@ -251,12 +253,12 @@ export default function ActionPlanScreen() {
                   paddingVertical: 7,
                   borderRadius: 20,
                   borderWidth: 1,
-                  backgroundColor: isActive ? "#1a5276" : "#fff",
-                  borderColor: isActive ? "#1a5276" : "#e5e7eb",
+                  backgroundColor: isActive ? colors.primaryStrong : colors.surface,
+                  borderColor: isActive ? colors.primaryStrong : colors.border,
                 }}
                 onPress={() => setFilter(key)}
               >
-                <Text style={{ fontSize: 12, fontWeight: "600", color: isActive ? "#fff" : "#6b7280" }}>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: isActive ? colors.onPrimary : colors.textSecondary }}>
                   {getFilterLabel(key)} ({count})
                 </Text>
               </TouchableOpacity>
@@ -268,11 +270,11 @@ export default function ActionPlanScreen() {
         <ScrollView style={{ flex: 1, paddingHorizontal: 20, paddingTop: 8 }}>
           {filteredItems.length === 0 ? (
             <View style={{ alignItems: "center", paddingVertical: 48 }}>
-              <Ionicons name="checkmark-done-circle" size={52} color="#27ae60" />
-              <Text style={{ color: "#374151", fontWeight: "600", fontSize: 15, marginTop: 12 }}>
+              <Ionicons name="checkmark-done-circle" size={52} color={colors.success} />
+              <Text style={{ color: colors.text, fontWeight: "600", fontSize: 15, marginTop: 12 }}>
                 {t("actionPlan.allDone")}
               </Text>
-              <Text style={{ color: "#9ca3af", fontSize: 13, marginTop: 4 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4 }}>
                 {t("actionPlan.allDoneText")}
               </Text>
             </View>
@@ -285,8 +287,8 @@ export default function ActionPlanScreen() {
                   padding: 14,
                   marginBottom: 10,
                   borderWidth: 1.5,
-                  backgroundColor: item.completed ? "#f9fafb" : getPriorityBg(item.priority),
-                  borderColor: item.completed ? "#e5e7eb" : getPriorityBorderColor(item.priority),
+                  backgroundColor: item.completed ? colors.background : getPriorityBg(item.priority),
+                  borderColor: item.completed ? colors.border : getPriorityBorderColor(item.priority),
                   opacity: item.completed ? 0.65 : 1,
                 }}
                 onPress={() => toggleItem(item.id)}
@@ -305,11 +307,11 @@ export default function ActionPlanScreen() {
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
-                      backgroundColor: item.completed ? "#27ae60" : "transparent",
-                      borderColor: item.completed ? "#27ae60" : "#d1d5db",
+                      backgroundColor: item.completed ? colors.success : "transparent",
+                      borderColor: item.completed ? colors.success : colors.border,
                     }}
                   >
-                    {item.completed && <Ionicons name="checkmark" size={13} color="#fff" />}
+                    {item.completed && <Ionicons name="checkmark" size={13} color={colors.onPrimary} />}
                   </View>
 
                   <View style={{ flex: 1 }}>
@@ -327,7 +329,7 @@ export default function ActionPlanScreen() {
                           {getPriorityLabel(item.priority)}
                         </Text>
                       </View>
-                      <Text style={{ color: "#d1d5db", fontSize: 11 }}>#{idx + 1}</Text>
+                      <Text style={{ color: colors.border, fontSize: 11 }}>#{idx + 1}</Text>
                     </View>
 
                     {/* Text */}
@@ -335,7 +337,7 @@ export default function ActionPlanScreen() {
                       style={{
                         fontSize: 13,
                         lineHeight: 19,
-                        color: item.completed ? "#9ca3af" : "#1f2937",
+                        color: item.completed ? colors.textSecondary : colors.text,
                         textDecorationLine: item.completed ? "line-through" : "none",
                       }}
                     >
@@ -351,7 +353,7 @@ export default function ActionPlanScreen() {
           <TouchableOpacity
             style={{
               borderWidth: 1,
-              borderColor: "#e5e7eb",
+              borderColor: colors.border,
               borderRadius: 16,
               paddingVertical: 14,
               alignItems: "center",
@@ -360,12 +362,12 @@ export default function ActionPlanScreen() {
               flexDirection: "row",
               justifyContent: "center",
               gap: 8,
-              backgroundColor: "#fff",
+              backgroundColor: colors.card,
             }}
             onPress={() => router.push("/(tabs)/scan")}
           >
-            <Ionicons name="refresh-outline" size={16} color="#6b7280" />
-            <Text style={{ color: "#6b7280", fontWeight: "600", fontSize: 14 }}>{t("actionPlan.newScan")}</Text>
+            <Ionicons name="refresh-outline" size={16} color={colors.textSecondary} />
+            <Text style={{ color: colors.buttonSecondaryText, fontWeight: "600", fontSize: 14 }}>{t("actionPlan.newScan")}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>

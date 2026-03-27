@@ -3,6 +3,8 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { View, ActivityIndicator } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
+import { light } from "@/colors-indonesia";
 import { initI18n } from "@/lib/i18n";
 import "../global.css";
 
@@ -28,8 +30,8 @@ function RootLayoutNav() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
-        <ActivityIndicator size="large" color="#1a5276" />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: light.background }}>
+        <ActivityIndicator size="large" color={light.primary} />
       </View>
     );
   }
@@ -52,17 +54,19 @@ export default function RootLayout() {
 
   if (!i18nReady) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" }}>
-        <ActivityIndicator size="large" color="#1a5276" />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: light.background }}>
+        <ActivityIndicator size="large" color={light.primary} />
       </View>
     );
   }
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <RootLayoutNav />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <RootLayoutNav />
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

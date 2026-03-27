@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { API_BASE_URL } from "@/constants/api";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@/context/ThemeContext";
 
 interface Message {
   id: string;
@@ -32,6 +33,7 @@ interface ChatModalProps {
 export default function ChatModal({ visible, onClose }: ChatModalProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +41,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
 
   const QUICK_ACTIONS = [
     t("chat.quick1"),
-    "Was ist IEU-CEPA?",
+    t("chat.quick5"),
     t("chat.quick2"),
     t("chat.quick4"),
   ];
@@ -133,16 +135,16 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#1a5276" />
+      <StatusBar barStyle="light-content" backgroundColor={colors.primaryStrong} />
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: "#fff" }}
+        style={{ flex: 1, backgroundColor: colors.surface }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={0}
       >
         {/* Header */}
         <View
           style={{
-            backgroundColor: "#1a5276",
+            backgroundColor: colors.primaryStrong,
             paddingTop: insets.top + 12,
             paddingBottom: 16,
             paddingHorizontal: 16,
@@ -155,30 +157,30 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
               width: 38,
               height: 38,
               borderRadius: 19,
-              backgroundColor: "rgba(255,255,255,0.2)",
+              backgroundColor: colors.onPrimary + "33",
               alignItems: "center",
               justifyContent: "center",
               marginRight: 12,
             }}
           >
-            <Ionicons name="chatbubble-ellipses" size={18} color="#fff" />
+            <Ionicons name="chatbubble-ellipses" size={18} color={colors.onPrimary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>{t("chat.title")}</Text>
-            <Text style={{ color: "#93c5fd", fontSize: 12 }}>{t("chat.subtitle")}</Text>
+            <Text style={{ color: colors.onPrimary, fontWeight: "bold", fontSize: 16 }}>{t("chat.title")}</Text>
+            <Text style={{ color: colors.onPrimary + "AA", fontSize: 12 }}>{t("chat.subtitle")}</Text>
           </View>
           <TouchableOpacity
             style={{
               width: 36,
               height: 36,
               borderRadius: 18,
-              backgroundColor: "rgba(255,255,255,0.15)",
+              backgroundColor: colors.onPrimary + "26",
               alignItems: "center",
               justifyContent: "center",
             }}
             onPress={onClose}
           >
-            <Ionicons name="close" size={20} color="#fff" />
+            <Ionicons name="close" size={20} color={colors.onPrimary} />
           </TouchableOpacity>
         </View>
 
@@ -190,7 +192,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
             paddingVertical: 10,
             gap: 6,
             borderBottomWidth: 1,
-            borderBottomColor: "#f3f4f6",
+            borderBottomColor: colors.surfaceAlt,
             flexWrap: "wrap",
           }}
         >
@@ -201,14 +203,14 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 borderRadius: 20,
-                backgroundColor: "#eff6ff",
+                backgroundColor: colors.secondary + "1A",
                 borderWidth: 1,
-                borderColor: "#bfdbfe",
+                borderColor: colors.secondary + "40",
               }}
               onPress={() => sendMessage(action)}
               disabled={loading}
             >
-              <Text style={{ color: "#1a5276", fontSize: 12, fontWeight: "600" }}>{action}</Text>
+              <Text style={{ color: colors.secondary, fontSize: 12, fontWeight: "600" }}>{action}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -236,15 +238,15 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
                       width: 18,
                       height: 18,
                       borderRadius: 9,
-                      backgroundColor: "#1a5276",
+                      backgroundColor: colors.secondary,
                       alignItems: "center",
                       justifyContent: "center",
                       marginRight: 6,
                     }}
                   >
-                    <Ionicons name="sparkles" size={10} color="#fff" />
+                    <Ionicons name="sparkles" size={10} color={colors.onPrimary} />
                   </View>
-                  <Text style={{ color: "#9ca3af", fontSize: 11 }}>{t("chat.title")}</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 11 }}>{t("chat.title")}</Text>
                 </View>
               )}
 
@@ -253,7 +255,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
                   borderRadius: 18,
                   paddingHorizontal: 14,
                   paddingVertical: 10,
-                  backgroundColor: msg.role === "user" ? "#1a5276" : "#f3f4f6",
+                  backgroundColor: msg.role === "user" ? colors.primary : colors.surfaceAlt,
                   borderBottomRightRadius: msg.role === "user" ? 4 : 18,
                   borderBottomLeftRadius: msg.role === "assistant" ? 4 : 18,
                 }}
@@ -262,7 +264,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
                   style={{
                     fontSize: 14,
                     lineHeight: 20,
-                    color: msg.role === "user" ? "#fff" : "#1f2937",
+                    color: msg.role === "user" ? colors.onPrimary : colors.text,
                   }}
                 >
                   {msg.content}
@@ -278,16 +280,16 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        backgroundColor: "#eff6ff",
+                        backgroundColor: colors.secondary + "1A",
                         borderWidth: 1,
-                        borderColor: "#bfdbfe",
+                        borderColor: colors.secondary + "40",
                         borderRadius: 12,
                         paddingHorizontal: 8,
                         paddingVertical: 3,
                       }}
                     >
-                      <Ionicons name="document-text-outline" size={10} color="#1a5276" style={{ marginRight: 3 }} />
-                      <Text style={{ color: "#1a5276", fontSize: 11 }} numberOfLines={1}>
+                      <Ionicons name="document-text-outline" size={10} color={colors.secondary} style={{ marginRight: 3 }} />
+                      <Text style={{ color: colors.secondary, fontSize: 11 }} numberOfLines={1}>
                         {source}
                       </Text>
                     </View>
@@ -298,7 +300,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
               <Text
                 style={{
                   fontSize: 10,
-                  color: "#9ca3af",
+                  color: colors.textSecondary,
                   marginTop: 4,
                   textAlign: msg.role === "user" ? "right" : "left",
                   marginLeft: msg.role === "assistant" ? 4 : 0,
@@ -314,7 +316,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
             <View style={{ alignSelf: "flex-start", marginBottom: 12 }}>
               <View
                 style={{
-                  backgroundColor: "#f3f4f6",
+                  backgroundColor: colors.surfaceAlt,
                   borderRadius: 18,
                   borderBottomLeftRadius: 4,
                   paddingHorizontal: 14,
@@ -324,8 +326,8 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
                   gap: 8,
                 }}
               >
-                <ActivityIndicator size="small" color="#1a5276" />
-                <Text style={{ color: "#6b7280", fontSize: 13 }}>{t("chat.responding")}</Text>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{t("chat.responding")}</Text>
               </View>
             </View>
           )}
@@ -341,8 +343,8 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
             paddingHorizontal: 16,
             paddingVertical: 12,
             borderTopWidth: 1,
-            borderTopColor: "#f3f4f6",
-            backgroundColor: "#fff",
+            borderTopColor: colors.surfaceAlt,
+            backgroundColor: colors.surface,
             paddingBottom: Math.max(insets.bottom + 12, 75)
           }}
         >
@@ -350,18 +352,18 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
             style={{
               flex: 1,
               borderWidth: 1,
-              borderColor: "#d1d5db",
+              borderColor: colors.inputBorder,
               borderRadius: 22,
               paddingHorizontal: 16,
               paddingVertical: 10,
-              color: "#111827",
+              color: colors.text,
               fontSize: 14,
-              backgroundColor: "#f9fafb",
+              backgroundColor: colors.inputBackground,
               marginRight: 10,
               maxHeight: 100,
             }}
             placeholder={t("chat.placeholder")}
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor={colors.placeholder}
             value={input}
             onChangeText={setInput}
             multiline
@@ -377,7 +379,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
               borderRadius: 22,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: input.trim() && !loading ? "#1a5276" : "#e5e7eb",
+              backgroundColor: input.trim() && !loading ? colors.primary : colors.border,
             }}
             onPress={() => sendMessage()}
             disabled={!input.trim() || loading}
@@ -385,7 +387,7 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
             <Ionicons
               name="send"
               size={18}
-              color={input.trim() && !loading ? "#fff" : "#9ca3af"}
+              color={input.trim() && !loading ? colors.onPrimary : colors.textSecondary}
             />
           </TouchableOpacity>
         </View>
