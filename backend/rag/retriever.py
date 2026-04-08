@@ -60,7 +60,34 @@ def _load_vectorstore() -> Chroma:
     )
 
 
-def get_rag_response(question: str, chat_history: list[dict[str, Any]]) -> dict[str, Any]:
+_LANGUAGE_NAMES = {"de": "German", "en": "English", "id": "Indonesian (Bahasa Indonesia)"}
+
+
+def _build_user_context_block(user_context: dict) -> str:
+    """Return a formatted string describing the user's profile for injection into the prompt."""
+    if not user_context:
+        return ""
+    parts = []
+    if user_context.get("company"):
+        parts.append(f"Company: {user_context['company']}")
+    if user_context.get("sector"):
+        parts.append(f"Sector: {user_context['sector']}")
+    if user_context.get("last_score") is not None:
+        parts.append(f"Last compliance score: {user_context['last_score']}/100")
+    missing = user_context.get("missing_requirements", [])
+    if missing:
+        parts.append(f"Open compliance gaps: {', '.join(missing[:4])}")
+    if not parts:
+        return ""
+    return "\n\nUSER PROFILE (tailor your answer to this specific context):\n" + "\n".join(f"- {p}" for p in parts)
+
+
+def get_rag_response(
+    question: str,
+    chat_history: list[dict[str, Any]],
+    language: str = "de",
+    user_context: dict | None = None,
+) -> dict[str, Any]:
     """
     Retrieve relevant document chunks and generate an answer using GPT-4o-mini.
 
@@ -89,7 +116,9 @@ def get_rag_response(question: str, chat_history: list[dict[str, Any]]) -> dict[
     context_text = "\n\n---\n\n".join(context_parts)
 
     # Assemble message list for the LLM
-    messages: list[Any] = [SystemMessage(content=SYSTEM_PROMPT)]
+    profile_block = _build_user_context_block(user_context or {})
+    system_content = SYSTEM_PROMPT + profile_block
+    messages: list[Any] = [SystemMessage(content=system_content)]
 
     # Inject prior chat turns
     for turn in chat_history:
@@ -101,11 +130,12 @@ def get_rag_response(question: str, chat_history: list[dict[str, Any]]) -> dict[
             messages.append(AIMessage(content=content))
 
     # Final user message with retrieved context
+    lang_name = _LANGUAGE_NAMES.get(language, "German")
     user_message_with_context = (
-        f"Benutze die folgenden Informationen aus den EU-Regulierungsdokumenten, "
-        f"um die Frage zu beantworten.\n\n"
-        f"KONTEXT:\n{context_text}\n\n"
-        f"FRAGE: {question}"
+        f"Use the following information from the EU regulatory documents to answer the question. "
+        f"IMPORTANT: Always respond in {lang_name}, regardless of the language of the documents.\n\n"
+        f"CONTEXT:\n{context_text}\n\n"
+        f"QUESTION: {question}"
     )
     messages.append(HumanMessage(content=user_message_with_context))
 

@@ -10,12 +10,19 @@ import {
   Platform,
   ActivityIndicator,
   StatusBar,
+  Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { API_BASE_URL } from "@/constants/api";
 import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
+import { storage, ScanResult } from "@/lib/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const CHAT_HISTORY_KEY = "@ieu_cepa:chat_history";
 
 interface Message {
   id: string;
@@ -23,6 +30,14 @@ interface Message {
   content: string;
   sources?: string[];
   timestamp: Date;
+}
+
+// Serialise/deserialise Date objects for AsyncStorage
+function serializeMessages(msgs: Message[]): string {
+  return JSON.stringify(msgs.map((m) => ({ ...m, timestamp: m.timestamp.toISOString() })));
+}
+function deserializeMessages(raw: string): Message[] {
+  return JSON.parse(raw).map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) }));
 }
 
 interface ChatModalProps {
@@ -35,9 +50,11 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lastScan, setLastScan] = useState<ScanResult | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   const QUICK_ACTIONS = [
@@ -57,18 +74,30 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
 
   useEffect(() => {
     if (visible) {
-      setMessages([getInitialMessage()]);
       setInput("");
+      storage.getLastScan().then(setLastScan);
+      AsyncStorage.getItem(CHAT_HISTORY_KEY).then((raw) => {
+        if (raw) {
+          const loaded = deserializeMessages(raw);
+          // Always show greeting in the currently selected language
+          if (loaded[0]?.id === "init") {
+            loaded[0] = getInitialMessage();
+          }
+          setMessages(loaded);
+        } else {
+          setMessages([getInitialMessage()]);
+        }
+      });
     }
   }, [visible]);
 
   useEffect(() => {
-    if (messages.length > 0) {
-      const timer = setTimeout(() => {
-        scrollRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
+    if (messages.length === 0) return;
+    AsyncStorage.setItem(CHAT_HISTORY_KEY, serializeMessages(messages));
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+    return () => clearTimeout(timer);
   }, [messages]);
 
   const sendMessage = async (text?: string) => {
@@ -94,10 +123,24 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
         .slice(0, -1)
         .map((m) => ({ role: m.role, content: m.content }));
 
+      const userContext = user
+        ? {
+            company: user.company,
+            sector: user.sector,
+            last_score: lastScan?.score,
+            missing_requirements: lastScan?.missing_requirements?.slice(0, 4),
+          }
+        : {};
+
       const response = await fetch(`${API_BASE_URL}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: messageText, history }),
+        body: JSON.stringify({
+          message: messageText,
+          history,
+          language: i18n.language,
+          user_context: userContext,
+        }),
       });
 
       if (!response.ok) {
@@ -170,6 +213,23 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
             <Text style={{ color: colors.onPrimary, fontWeight: "bold", fontSize: 16 }}>{t("chat.title")}</Text>
             <Text style={{ color: colors.onPrimary + "AA", fontSize: 12 }}>{t("chat.subtitle")}</Text>
           </View>
+          <TouchableOpacity
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: colors.onPrimary + "26",
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 8,
+            }}
+            onPress={async () => {
+              await AsyncStorage.removeItem(CHAT_HISTORY_KEY);
+              setMessages([getInitialMessage()]);
+            }}
+          >
+            <Ionicons name="trash-outline" size={17} color={colors.onPrimary} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={{
               width: 36,
@@ -313,6 +373,16 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
                 </View>
               )}
 
+              {/* DP7: AI disclaimer on non-initial assistant messages */}
+              {msg.role === "assistant" && msg.id !== "init" && (
+                <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5, marginLeft: 4 }}>
+                  <Ionicons name="information-circle-outline" size={11} color={colors.textSecondary} style={{ marginRight: 3 }} />
+                  <Text style={{ color: colors.textSecondary, fontSize: 10, flex: 1, lineHeight: 13 }}>
+                    {t("chat.disclaimer")}
+                  </Text>
+                </View>
+              )}
+
               <Text
                 style={{
                   fontSize: 10,
@@ -345,6 +415,48 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
                 <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{t("chat.responding")}</Text>
               </View>
+            </View>
+          )}
+
+          {/* DP8: Expert escalation card – shown after at least one exchange */}
+          {messages.length >= 3 && (
+            <View
+              style={{
+                marginHorizontal: 4,
+                marginBottom: 12,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: colors.secondary + "40",
+                backgroundColor: colors.secondary + "0D",
+                padding: 12,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+                <Ionicons name="people" size={14} color={colors.secondary} style={{ marginRight: 6 }} />
+                <Text style={{ color: colors.secondary, fontWeight: "700", fontSize: 13 }}>
+                  {t("chat.expertTitle")}
+                </Text>
+              </View>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17, marginBottom: 10 }}>
+                {t("chat.expertText")}
+              </Text>
+              <TouchableOpacity
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: colors.secondary,
+                  borderRadius: 20,
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  alignSelf: "flex-start",
+                }}
+                onPress={() => Linking.openURL("mailto:expert@sustainable-supply.academy?subject=IEU-CEPA%20Compliance%20Beratung")}
+              >
+                <Ionicons name="mail-outline" size={13} color={colors.onPrimary} style={{ marginRight: 6 }} />
+                <Text style={{ color: colors.onPrimary, fontSize: 12, fontWeight: "600" }}>
+                  {t("chat.expertBtn")}
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -386,7 +498,7 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
             maxLength={500}
             onSubmitEditing={() => sendMessage()}
             returnKeyType="send"
-            blurOnSubmit={false}
+            submitBehavior="newline"
           />
           <TouchableOpacity
             style={{

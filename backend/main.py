@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from rag.retriever import get_rag_response
+from rag.retriever import get_rag_response, _LANGUAGE_NAMES
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -47,6 +47,11 @@ class ChatRequest(BaseModel):
         default_factory=list,
         description="Previous chat turns: [{'role': 'user'|'assistant', 'content': str}]",
     )
+    language: str = Field(default="de", description="Response language: 'de', 'en', or 'id'")
+    user_context: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Optional user profile context: company, sector, last_score, missing_requirements",
+    )
 
 
 class ChatResponse(BaseModel):
@@ -58,6 +63,7 @@ class ReadinessScanRequest(BaseModel):
     company_name: str = Field(..., description="Name of the exporting company")
     sector: str = Field(..., description="Industry sector, e.g. 'Furniture', 'Textiles'")
     product_type: str = Field(..., description="Main product being exported")
+    language: str = Field(default="de", description="Response language: 'de', 'en', or 'id'")
     # Fields from mobile app (simple per-regulation checkboxes)
     compliance_dpp: bool = Field(False)
     compliance_eudr: bool = Field(False)
@@ -82,52 +88,55 @@ class ReadinessResponse(BaseModel):
 
 def _build_readiness_prompt(data: ReadinessScanRequest) -> str:
     import json as _json
+
+    lang_name = _LANGUAGE_NAMES.get(data.language, "German")
+
     checklist = {
-        "Digital Product Passport (DPP) vorhanden": data.compliance_dpp,
-        "EUDR Sorgfaltspflicht erfüllt": data.compliance_eudr,
-        "CE-Kennzeichnung vorhanden": data.compliance_ce,
-        "ESG-Berichterstattung (CSRD) vorhanden": data.compliance_esg,
-        "Ursprungszeugnis vorhanden": data.compliance_origin,
-        "Lebensmittelsicherheit (HACCP/EU 178/2002) erfüllt": data.compliance_food_safety,
+        "Digital Product Passport (DPP)": data.compliance_dpp,
+        "EUDR Due Diligence": data.compliance_eudr,
+        "CE Marking": data.compliance_ce,
+        "ESG Reporting (CSRD)": data.compliance_esg,
+        "Certificate of Origin": data.compliance_origin,
+        "Food Safety (HACCP/EU 178/2002)": data.compliance_food_safety,
     }
 
     completed = [k for k, v in checklist.items() if v]
-    missing = [k for k, v in checklist.items() if not v]
     raw_score = int(len(completed) / len(checklist) * 100)
 
     checklist_text = "\n".join(
         f"  {'[x]' if v else '[ ]'} {k}" for k, v in checklist.items()
     )
 
-    return f"""Du bist ein EU-Compliance-Experte für indonesische KMU-Exporteure (IEU-CEPA).
-Analysiere den folgenden Compliance-Scan eines Unternehmens und erstelle eine strukturierte Bewertung.
+    return f"""You are an EU compliance expert for Indonesian SME exporters (IEU-CEPA).
+Analyse the following compliance scan and return a structured assessment.
+IMPORTANT: All text values in the JSON (missing_requirements, action_plan, analysis) must be written in {lang_name}.
 
-UNTERNEHMEN: {data.company_name}
-SEKTOR: {data.sector}
-PRODUKT: {data.product_type}
+COMPANY: {data.company_name}
+SECTOR: {data.sector}
+PRODUCT: {data.product_type}
 
-COMPLIANCE-CHECKLISTE:
+COMPLIANCE CHECKLIST:
 {checklist_text}
 
-Erfüllt: {len(completed)}/{len(checklist)} Anforderungen
-Vorläufiger Rohwert: {raw_score}/100
+Fulfilled: {len(completed)}/{len(checklist)} requirements
+Preliminary raw score: {raw_score}/100
 
-AUFGABE:
-Erstelle eine JSON-Antwort mit genau diesem Format (ohne Markdown-Codeblock):
+TASK:
+Return a JSON response in exactly this format (no markdown code block):
 {{
-  "score": <integer 0-100, gewichtet nach Wichtigkeit der Anforderungen>,
-  "risk_level": "<'Low' wenn Score >= 70, 'Medium' wenn 40-69, 'High' wenn < 40>",
+  "score": <integer 0-100, weighted by importance of requirements>,
+  "risk_level": "<'Low' if score >= 70, 'Medium' if 40-69, 'High' if < 40>",
   "completed_requirements": {_json.dumps(completed)},
-  "missing_requirements": [<Liste der fehlenden Anforderungen als kurze deutsche Strings>],
-  "action_plan": [<priorisierte Handlungsempfehlungen auf Deutsch, max. 6 konkrete Schritte>],
-  "analysis": "<Detaillierte Analyse auf Deutsch in 3-4 Sätzen: Stärken, Risiken, Dringlichkeit>"
+  "missing_requirements": [<list of missing requirements as short strings in {lang_name}>],
+  "action_plan": [<prioritised action recommendations in {lang_name}, max. 6 concrete steps>],
+  "analysis": "<Detailed analysis in {lang_name} in 3-4 sentences: strengths, risks, urgency>"
 }}
 
-Berücksichtige dabei:
-- Sektorspezifische Risiken für {data.sector} (z.B. EUDR bei Holz/Palmöl, CE bei Elektronik)
-- IEU-CEPA Anforderungen und EU-Marktzugangsvoraussetzungen
-- Priorisierung nach Umsetzungsdringlichkeit und Bußgeldrisiko
-- Praktische Umsetzbarkeit für kleine indonesische Unternehmen
+Consider:
+- Sector-specific risks for {data.sector} (e.g. EUDR for wood/palm oil, CE for electronics)
+- IEU-CEPA requirements and EU market access conditions
+- Prioritisation by implementation urgency and penalty risk
+- Practical feasibility for small Indonesian companies
 """
 
 
@@ -191,6 +200,8 @@ def chat(request: ChatRequest) -> ChatResponse:
         result = get_rag_response(
             question=request.message,
             chat_history=request.history,
+            language=request.language,
+            user_context=request.user_context,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
@@ -215,6 +226,7 @@ def analyze_readiness(request: ReadinessScanRequest) -> ReadinessResponse:
         rag_result = get_rag_response(
             question=prompt,
             chat_history=[],
+            language=request.language,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc))

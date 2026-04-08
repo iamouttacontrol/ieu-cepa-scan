@@ -17,32 +17,10 @@ import { API_BASE_URL } from "@/constants/api";
 import { storage, ScanResult } from "@/lib/storage";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 
-const SECTORS = [
-  "Herstellung",
-  "Textil & Bekleidung",
-  "Lebensmittel & Getränke",
-  "Elektronik",
-  "Möbel & Holz",
-  "Chemikalien",
-  "Landwirtschaft",
-  "Sonstiges",
-];
-
-const COMPANY_SIZES = ["Mikro (<10)", "Klein (10-49)", "Mittel (50-249)", "Groß (250+)"];
-const TARGET_COUNTRIES = [
-  "Deutschland",
-  "Niederlande",
-  "Frankreich",
-  "Italien",
-  "Spanien",
-  "Polen",
-  "Schweden",
-  "Andere EU",
-];
-const EXPORT_EXPERIENCES = ["Keine", "1-2 Jahre", "3-5 Jahre", "5+ Jahre"];
 
 interface ScanFormData {
   company_name: string;
@@ -260,6 +238,11 @@ export default function ScanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+
+  const SECTORS = t("scan.options.sectors", { returnObjects: true }) as string[];
+  const COMPANY_SIZES = t("scan.options.companySizes", { returnObjects: true }) as string[];
+  const TARGET_COUNTRIES = t("scan.options.targetCountries", { returnObjects: true }) as string[];
+  const EXPORT_EXPERIENCES = t("scan.options.exportExperiences", { returnObjects: true }) as string[];
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -360,6 +343,7 @@ export default function ScanScreen() {
           compliance_esg: form.compliance_esg,
           compliance_origin: form.compliance_origin,
           compliance_food_safety: form.compliance_food_safety,
+          language: i18n.language,
         }),
       });
 
