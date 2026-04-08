@@ -81,7 +81,7 @@ def get_rag_response(question: str, chat_history: list[dict[str, Any]]) -> dict[
     context_parts: list[str] = []
     sources: list[str] = []
     for doc in relevant_docs:
-        source = doc.metadata.get("source", "unknown")
+        source = doc.metadata.get("source", "unknown").replace("\\", "/")
         if source not in sources:
             sources.append(source)
         context_parts.append(f"[Quelle: {source}]\n{doc.page_content}")

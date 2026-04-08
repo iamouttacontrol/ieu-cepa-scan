@@ -13,6 +13,7 @@ from typing import Any
 
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -137,6 +138,47 @@ Berücksichtige dabei:
 @app.get("/health", summary="Health check")
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/documents/{filename:path}", summary="Serve a document file")
+def serve_document(filename: str) -> FileResponse:
+    """Stream a PDF file from the documents directory."""
+    docs_dir = Path(__file__).parent / "documents"
+    file_path = (docs_dir / filename).resolve()
+
+    # Security: ensure the resolved path stays inside documents/
+    if not str(file_path).startswith(str(docs_dir.resolve())):
+        raise HTTPException(status_code=403, detail="Access denied.")
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    return FileResponse(
+        path=str(file_path),
+        media_type="application/pdf",
+        filename=file_path.name,
+    )
+
+
+@app.get("/documents", summary="List all indexed documents")
+def list_documents() -> list[dict]:
+    """Return all PDF files available in the documents/ directory."""
+    docs_dir = Path(__file__).parent / "documents"
+    if not docs_dir.exists():
+        return []
+
+    documents = []
+    for pdf_path in sorted(docs_dir.rglob("*.pdf")):
+        rel_path = pdf_path.relative_to(docs_dir)
+        stat = pdf_path.stat()
+        import urllib.parse
+        decoded = urllib.parse.unquote(pdf_path.stem)
+        display_name = decoded.replace("_", " ").strip()
+        documents.append({
+            "filename": str(rel_path).replace("\\", "/"),
+            "name": display_name,
+            "size_kb": max(1, round(stat.st_size / 1024)),
+        })
+    return documents
 
 
 @app.post("/chat", response_model=ChatResponse, summary="RAG-powered compliance Q&A")

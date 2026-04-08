@@ -15,15 +15,18 @@ import ChatModal from "@/components/ChatModal";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
+import { ThemeColors } from "@/colors-indonesia";
+
+type FeatureAction = "scan" | "action-plan" | "chat" | "learning";
 
 interface FeatureCard {
-  titleKey: string;
-  descriptionKey: string;
+  title: string;
+  description: string;
   icon: React.ComponentProps<typeof Ionicons>["name"];
   color: string;
   bgColor: string;
-  action: "scan" | "action-plan" | "chat" | "learning";
-  badgeKey?: string;
+  action: FeatureAction;
+  badge?: string;
 }
 
 function formatDate(iso: string): string {
@@ -39,57 +42,13 @@ function formatDate(iso: string): string {
 }
 
 export default function DashboardScreen() {
+  const { user } = useAuth();
+  const router = useRouter();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { user } = useAuth();
-  const router = useRouter();
   const [chatVisible, setChatVisible] = useState(false);
   const [lastScan, setLastScan] = useState<ScanResult | null>(null);
-
-  const featureCards: FeatureCard[] = [
-    {
-      titleKey: "dashboard.readinessScan",
-      descriptionKey: "scan.subtitle",
-      icon: "search-circle",
-      color: colors.primary,
-      bgColor: colors.primary + "1A",
-      action: "scan",
-    },
-    {
-      titleKey: "dashboard.actionPlan",
-      descriptionKey: "actionPlan.subtitle",
-      icon: "list-circle",
-      color: colors.success,
-      bgColor: colors.success + "1A",
-      action: "action-plan",
-    },
-    {
-      titleKey: "dashboard.aiAssistant",
-      descriptionKey: "chat.subtitle",
-      icon: "chatbubble-ellipses",
-      color: colors.secondary,
-      bgColor: colors.secondary + "1A",
-      action: "chat",
-    },
-    {
-      titleKey: "dashboard.learningHub",
-      descriptionKey: "learning.subtitle",
-      icon: "school",
-      color: colors.accent,
-      bgColor: colors.accent + "1A",
-      action: "learning",
-      badgeKey: "dashboard.comingSoon",
-    },
-  ];
-
-  function getRiskColor(riskLevel: string): string {
-    const l = riskLevel?.toLowerCase();
-    if (l === "hoch" || l === "high") return colors.error;
-    if (l === "mittel" || l === "medium") return colors.warning;
-    if (l === "niedrig" || l === "low") return colors.success;
-    return colors.textSecondary;
-  }
 
   useFocusEffect(
     useCallback(() => {
@@ -97,21 +56,16 @@ export default function DashboardScreen() {
     }, [])
   );
 
-  const handleCardPress = (action: FeatureCard["action"]) => {
-    switch (action) {
-      case "chat":
-        setChatVisible(true);
-        break;
-      case "learning":
-        router.push("/(tabs)/learning");
-        break;
-      case "scan":
-        router.push("/(tabs)/scan");
-        break;
-      case "action-plan":
-        router.push("/(tabs)/action-plan");
-        break;
-    }
+  const displayName = user?.name
+    ? user.name.charAt(0).toUpperCase() + user.name.slice(1)
+    : t("dashboard.user");
+
+  const getRiskColor = (riskLevel: string): string => {
+    const l = riskLevel?.toLowerCase();
+    if (l === "hoch" || l === "high") return colors.error;
+    if (l === "mittel" || l === "medium") return colors.warning;
+    if (l === "niedrig" || l === "low") return colors.success;
+    return colors.textSecondary;
   };
 
   const getRiskLabel = (riskLevel: string): string => {
@@ -122,30 +76,82 @@ export default function DashboardScreen() {
     return riskLevel ?? "–";
   };
 
-  const displayName = user?.name
-    ? user.name.charAt(0).toUpperCase() + user.name.slice(1)
-    : "Nutzer";
+  const featureCards: FeatureCard[] = [
+    {
+      title: t("dashboard.readinessScan"),
+      description: t("dashboard.readinessScanDesc"),
+      icon: "search-circle",
+      color: colors.primary,
+      bgColor: colors.primary + "1A",
+      action: "scan",
+    },
+    {
+      title: t("dashboard.actionPlan"),
+      description: t("dashboard.actionPlanDesc"),
+      icon: "list-circle",
+      color: colors.success,
+      bgColor: colors.success + "1A",
+      action: "action-plan",
+    },
+    {
+      title: t("dashboard.aiAssistant"),
+      description: t("dashboard.aiAssistantDesc"),
+      icon: "chatbubble-ellipses",
+      color: colors.secondary,
+      bgColor: colors.secondary + "1A",
+      action: "chat",
+    },
+    {
+      title: t("dashboard.learningHub"),
+      description: t("dashboard.learningHubDesc"),
+      icon: "school",
+      color: colors.accent,
+      bgColor: colors.accent + "1A",
+      action: "learning",
+      badge: t("dashboard.comingSoon"),
+    },
+  ];
+
+  const handleCardPress = (action: FeatureAction) => {
+    if (action === "chat") {
+      setChatVisible(true);
+      return;
+    }
+    router.push(`/(tabs)/${action}`);
+  };
+
+  const handleSourcePress = (source: string) => {
+    router.navigate(`/(tabs)/knowledge?doc=${encodeURIComponent(source)}`);
+  };
 
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor={colors.primaryStrong} />
       <ScrollView style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Header */}
-        <View style={{ backgroundColor: colors.primaryStrong, paddingTop: insets.top + 12, paddingBottom: 32, paddingHorizontal: 24 }}>
-          <Text style={{ color: colors.onPrimary + "AA", fontSize: 13, fontWeight: "500" }}>{t("dashboard.welcome")},</Text>
+        <View
+          style={{
+            backgroundColor: colors.primaryStrong,
+            paddingTop: insets.top + 12,
+            paddingBottom: 32,
+            paddingHorizontal: 24,
+          }}
+        >
+          <Text style={{ color: colors.onPrimary + "AA", fontSize: 13, fontWeight: "500" }}>
+            {t("dashboard.welcome")},
+          </Text>
           <Text style={{ color: colors.onPrimary, fontSize: 26, fontWeight: "bold", marginTop: 2, letterSpacing: -0.5 }}>
             {displayName}!
           </Text>
           {user?.company && (
-            <Text style={{ color: colors.onPrimary + "66", fontSize: 13, marginTop: 3 }}>{user.company}</Text>
+            <Text style={{ color: colors.onPrimary + "AA", fontSize: 13, marginTop: 3 }}>{user.company}</Text>
           )}
-
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
               marginTop: 14,
-              backgroundColor: colors.onPrimary + "1F",
+              backgroundColor: colors.onPrimary + "1A",
               borderRadius: 20,
               paddingHorizontal: 12,
               paddingVertical: 7,
@@ -153,7 +159,7 @@ export default function DashboardScreen() {
             }}
           >
             <Ionicons name="shield-checkmark" size={13} color={colors.onPrimary + "AA"} />
-            <Text style={{ color: colors.onPrimary + "66", fontSize: 12, marginLeft: 6, fontWeight: "500" }}>
+            <Text style={{ color: colors.onPrimary + "AA", fontSize: 12, marginLeft: 6, fontWeight: "500" }}>
               {t("dashboard.tagline")}
             </Text>
           </View>
@@ -207,17 +213,23 @@ export default function DashboardScreen() {
                 </View>
               </View>
             </View>
-
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.surfaceAlt }}>
-              <Text style={{ fontSize: 11, color: colors.textSecondary }}>
-                {formatDate(lastScan.created_at)}
-              </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingTop: 10,
+                borderTopWidth: 1,
+                borderTopColor: colors.border,
+              }}
+            >
+              <Text style={{ fontSize: 11, color: colors.textSecondary }}>{formatDate(lastScan.created_at)}</Text>
               <TouchableOpacity
                 style={{ flexDirection: "row", alignItems: "center" }}
                 onPress={() => router.push("/(tabs)/action-plan")}
               >
-                <Text style={{ color: colors.secondary, fontSize: 13, fontWeight: "600" }}>{t("dashboard.actionPlan")}</Text>
-                <Ionicons name="chevron-forward" size={14} color={colors.secondary} style={{ marginLeft: 2 }} />
+                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>{t("dashboard.actionPlan")}</Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.primary} style={{ marginLeft: 2 }} />
               </TouchableOpacity>
             </View>
           </View>
@@ -243,7 +255,7 @@ export default function DashboardScreen() {
               {t("dashboard.noScan")}
             </Text>
             <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: "center", marginTop: 4, lineHeight: 18 }}>
-              {t("dashboard.aboutText")}
+              {t("dashboard.noScanText")}
             </Text>
             <TouchableOpacity
               style={{
@@ -262,13 +274,22 @@ export default function DashboardScreen() {
 
         {/* Feature Cards */}
         <View style={{ paddingHorizontal: 20, paddingTop: 20 }}>
-          <Text style={{ color: colors.textSecondary, fontWeight: "600", fontSize: 11, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 12 }}>
+          <Text
+            style={{
+              color: colors.textSecondary,
+              fontWeight: "600",
+              fontSize: 11,
+              letterSpacing: 0.8,
+              textTransform: "uppercase",
+              marginBottom: 12,
+            }}
+          >
             {t("dashboard.features")}
           </Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
             {featureCards.map((card) => (
               <TouchableOpacity
-                key={card.titleKey}
+                key={card.action}
                 style={{
                   backgroundColor: colors.card,
                   borderRadius: 18,
@@ -296,11 +317,11 @@ export default function DashboardScreen() {
                 >
                   <Ionicons name={card.icon} size={24} color={card.color} />
                 </View>
-                <Text style={{ color: colors.text, fontWeight: "700", fontSize: 13 }}>{t(card.titleKey)}</Text>
+                <Text style={{ color: colors.text, fontWeight: "700", fontSize: 13 }}>{card.title}</Text>
                 <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 3, lineHeight: 16 }}>
-                  {t(card.descriptionKey)}
+                  {card.description}
                 </Text>
-                {card.badgeKey && (
+                {card.badge && (
                   <View
                     style={{
                       backgroundColor: colors.accent + "1A",
@@ -311,7 +332,7 @@ export default function DashboardScreen() {
                       alignSelf: "flex-start",
                     }}
                   >
-                    <Text style={{ fontSize: 10, color: colors.accent, fontWeight: "600" }}>{t(card.badgeKey)}</Text>
+                    <Text style={{ fontSize: 10, color: colors.accent, fontWeight: "600" }}>{card.badge}</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -319,7 +340,7 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* About */}
+        {/* About IEU-CEPA */}
         <View
           style={{
             marginHorizontal: 20,
@@ -335,27 +356,49 @@ export default function DashboardScreen() {
             elevation: 2,
           }}
         >
-          <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: "600", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 8 }}>
+          <Text
+            style={{
+              fontSize: 11,
+              color: colors.textSecondary,
+              fontWeight: "600",
+              letterSpacing: 0.5,
+              textTransform: "uppercase",
+              marginBottom: 8,
+            }}
+          >
             {t("dashboard.about")}
           </Text>
-          <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>
-            {t("dashboard.aboutText")}
-          </Text>
+          <Text style={{ color: colors.text, fontSize: 13, lineHeight: 20 }}>{t("dashboard.aboutText")}</Text>
           <View style={{ flexDirection: "row", marginTop: 14, gap: 10 }}>
-            <StatBox value="6+" label={t("dashboard.statRegs")} color={colors.primary} bg={colors.primary + "1A"} />
-            <StatBox value="KI" label={t("dashboard.statAi")} color={colors.secondary} bg={colors.secondary + "1A"} />
-            <StatBox value="24/7" label={t("dashboard.statAvailable")} color={colors.accent} bg={colors.accent + "1A"} />
+            <StatBox value="6+" label={t("dashboard.statRegs")} color={colors.primary} bg={colors.primary + "1A"} colors={colors} />
+            <StatBox value="KI" label={t("dashboard.statAi")} color={colors.success} bg={colors.success + "1A"} colors={colors} />
+            <StatBox value="24/7" label={t("dashboard.statAvailable")} color={colors.accent} bg={colors.accent + "1A"} colors={colors} />
           </View>
         </View>
       </ScrollView>
 
-      <ChatModal visible={chatVisible} onClose={() => setChatVisible(false)} />
+      <ChatModal
+        visible={chatVisible}
+        onClose={() => setChatVisible(false)}
+        onSourcePress={handleSourcePress}
+      />
     </>
   );
 }
 
-function StatBox({ value, label, color, bg }: { value: string; label: string; color: string; bg: string }) {
-  const { colors } = useTheme();
+function StatBox({
+  value,
+  label,
+  color,
+  bg,
+  colors,
+}: {
+  value: string;
+  label: string;
+  color: string;
+  bg: string;
+  colors: ThemeColors;
+}) {
   return (
     <View style={{ flex: 1, backgroundColor: bg, borderRadius: 12, padding: 10, alignItems: "center" }}>
       <Text style={{ color, fontSize: 18, fontWeight: "bold" }}>{value}</Text>

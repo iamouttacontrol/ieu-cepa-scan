@@ -38,6 +38,12 @@ const tabs: TabConfig[] = [
     iconOutline: "school-outline",
   },
   {
+    name: "knowledge",
+    title: "Knowledge",
+    icon: "bookmarks",
+    iconOutline: "bookmarks-outline",
+  },
+  {
     name: "profile",
     title: "Profil",
     icon: "person-circle",

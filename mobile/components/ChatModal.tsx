@@ -28,9 +28,10 @@ interface Message {
 interface ChatModalProps {
   visible: boolean;
   onClose: () => void;
+  onSourcePress?: (source: string) => void;
 }
 
-export default function ChatModal({ visible, onClose }: ChatModalProps) {
+export default function ChatModal({ visible, onClose, onSourcePress }: ChatModalProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -275,24 +276,39 @@ export default function ChatModal({ visible, onClose }: ChatModalProps) {
               {msg.role === "assistant" && msg.sources && msg.sources.length > 0 && (
                 <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 6, marginLeft: 4, gap: 4 }}>
                   {msg.sources.map((source, i) => (
-                    <View
+                    <TouchableOpacity
                       key={i}
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
-                        backgroundColor: colors.secondary + "1A",
+                        backgroundColor: onSourcePress ? colors.primary + "1A" : colors.secondary + "1A",
                         borderWidth: 1,
-                        borderColor: colors.secondary + "40",
+                        borderColor: onSourcePress ? colors.primary + "40" : colors.secondary + "40",
                         borderRadius: 12,
                         paddingHorizontal: 8,
                         paddingVertical: 3,
                       }}
+                      onPress={() => {
+                        if (onSourcePress) {
+                          onClose();
+                          setTimeout(() => onSourcePress(source), 300);
+                        }
+                      }}
+                      activeOpacity={onSourcePress ? 0.7 : 1}
                     >
-                      <Ionicons name="document-text-outline" size={10} color={colors.secondary} style={{ marginRight: 3 }} />
-                      <Text style={{ color: colors.secondary, fontSize: 11 }} numberOfLines={1}>
+                      <Ionicons
+                        name={onSourcePress ? "library-outline" : "document-text-outline"}
+                        size={10}
+                        color={onSourcePress ? colors.primary : colors.secondary}
+                        style={{ marginRight: 3 }}
+                      />
+                      <Text style={{ color: onSourcePress ? colors.primary : colors.secondary, fontSize: 11 }} numberOfLines={1}>
                         {source}
                       </Text>
-                    </View>
+                      {onSourcePress && (
+                        <Ionicons name="chevron-forward" size={9} color={colors.primary} style={{ marginLeft: 2 }} />
+                      )}
+                    </TouchableOpacity>
                   ))}
                 </View>
               )}
