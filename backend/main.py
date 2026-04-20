@@ -59,12 +59,41 @@ class ChatResponse(BaseModel):
     sources: list[str]
 
 
+class DimensionInput(BaseModel):
+    """Dimension-based assessment: list of 0/1/2 responses for each question."""
+    d1: list[int] = Field(default_factory=lambda: [0, 0, 0, 0])  # Product Standards & Safety
+    d2: list[int] = Field(default_factory=lambda: [0, 0, 0, 0])  # Sustainability & Due Diligence
+    d3: list[int] = Field(default_factory=lambda: [0, 0, 0, 0])  # Supply Chain Transparency
+    d4: list[int] = Field(default_factory=lambda: [0, 0, 0, 0])  # Data Protection & Digital Compliance
+    d5: list[int] = Field(default_factory=lambda: [0, 0, 0, 0])  # Documentation & Certification
+    d6: list[int] = Field(default_factory=lambda: [0, 0, 0, 0])  # Market Access Fundamentals
+
+
+class ActionItem(BaseModel):
+    text: str
+    dimension: str   # 'D1'–'D6'
+    effort: str      # 'low', 'medium', 'high'
+    priority: str    # 'critical', 'significant', 'monitored'
+
+
+class DimensionScore(BaseModel):
+    id: str          # 'd1'–'d6'
+    name: str
+    score: int       # 0–100
+    weight: float
+    priority: str    # 'critical', 'significant', 'monitored', 'good'
+
+
 class ReadinessScanRequest(BaseModel):
     company_name: str = Field(..., description="Name of the exporting company")
     sector: str = Field(..., description="Industry sector, e.g. 'Furniture', 'Textiles'")
     product_type: str = Field(..., description="Main product being exported")
+    target_country: str = Field(default="", description="Target EU market country")
+    export_experience: str = Field(default="", description="Export experience level")
     language: str = Field(default="de", description="Response language: 'de', 'en', or 'id'")
-    # Fields from mobile app (simple per-regulation checkboxes)
+    # Dimension-based assessment (new)
+    dimensions: DimensionInput = Field(default_factory=DimensionInput)
+    # Legacy checkbox fields (kept for backwards compatibility)
     compliance_dpp: bool = Field(False)
     compliance_eudr: bool = Field(False)
     compliance_ce: bool = Field(False)
@@ -78,7 +107,9 @@ class ReadinessResponse(BaseModel):
     risk_level: str = Field(..., description="'Low', 'Medium', or 'High'")
     missing_requirements: list[str]
     completed_requirements: list[str]
-    action_plan: list[str]
+    action_plan: list[str]  # kept for backwards compatibility
+    action_items: list[ActionItem] = Field(default_factory=list)
+    dimension_scores: list[DimensionScore] = Field(default_factory=list)
     analysis: str = Field(..., description="Detailed narrative analysis from the AI")
 
 
@@ -86,57 +117,125 @@ class ReadinessResponse(BaseModel):
 # Helper: build readiness prompt
 # ---------------------------------------------------------------------------
 
-def _build_readiness_prompt(data: ReadinessScanRequest) -> str:
+def _calc_dimension_scores(data: ReadinessScanRequest) -> list[DimensionScore]:
+    """Calculate per-dimension scores and classify gaps based on sector weights."""
+    dim_map = {
+        "d1": "Product Standards & Safety",
+        "d2": "Sustainability & Due Diligence",
+        "d3": "Supply Chain Transparency",
+        "d4": "Data Protection & Digital Compliance",
+        "d5": "Documentation & Certification",
+        "d6": "Market Access Fundamentals",
+    }
+
+    # Sector-based weights
+    s = data.sector.lower()
+    if any(x in s for x in ["food", "lebensmittel", "agri", "beverage", "getränke", "pangan"]):
+        weights = {"d1": 0.10, "d2": 0.25, "d3": 0.20, "d4": 0.10, "d5": 0.20, "d6": 0.15}
+    elif any(x in s for x in ["textil", "apparel", "pakaian", "fashion"]):
+        weights = {"d1": 0.20, "d2": 0.20, "d3": 0.20, "d4": 0.10, "d5": 0.15, "d6": 0.15}
+    elif any(x in s for x in ["elektronik", "electronic", "tech"]):
+        weights = {"d1": 0.30, "d2": 0.10, "d3": 0.05, "d4": 0.20, "d5": 0.20, "d6": 0.15}
+    elif any(x in s for x in ["möbel", "wood", "furniture", "kayu", "holz"]):
+        weights = {"d1": 0.20, "d2": 0.25, "d3": 0.20, "d4": 0.05, "d5": 0.15, "d6": 0.15}
+    else:
+        w = round(1 / 6, 4)
+        weights = {k: w for k in dim_map}
+
+    results = []
+    dim_data = {
+        "d1": data.dimensions.d1,
+        "d2": data.dimensions.d2,
+        "d3": data.dimensions.d3,
+        "d4": data.dimensions.d4,
+        "d5": data.dimensions.d5,
+        "d6": data.dimensions.d6,
+    }
+
+    for dim_id, responses in dim_data.items():
+        if not responses:
+            responses = [0, 0, 0, 0]
+        max_score = len(responses) * 2
+        raw = sum(min(max(int(r), 0), 2) for r in responses)
+        score = round((raw / max_score) * 100) if max_score > 0 else 0
+        weight = weights.get(dim_id, 1 / 6)
+        is_high_weight = weight >= 0.20
+        if score < 40 and is_high_weight:
+            priority = "critical"
+        elif score < 60:
+            priority = "significant"
+        elif score < 80:
+            priority = "monitored"
+        else:
+            priority = "good"
+        results.append(DimensionScore(
+            id=dim_id,
+            name=dim_map[dim_id],
+            score=score,
+            weight=weight,
+            priority=priority,
+        ))
+    return results
+
+
+def _build_readiness_prompt(data: ReadinessScanRequest, dimension_scores: list[DimensionScore]) -> str:
     import json as _json
 
     lang_name = _LANGUAGE_NAMES.get(data.language, "German")
 
-    checklist = {
-        "Digital Product Passport (DPP)": data.compliance_dpp,
-        "EUDR Due Diligence": data.compliance_eudr,
-        "CE Marking": data.compliance_ce,
-        "ESG Reporting (CSRD)": data.compliance_esg,
-        "Certificate of Origin": data.compliance_origin,
-        "Food Safety (HACCP/EU 178/2002)": data.compliance_food_safety,
-    }
+    # Overall weighted score
+    overall = round(sum(d.score * d.weight for d in dimension_scores))
 
-    completed = [k for k, v in checklist.items() if v]
-    raw_score = int(len(completed) / len(checklist) * 100)
-
-    checklist_text = "\n".join(
-        f"  {'[x]' if v else '[ ]'} {k}" for k, v in checklist.items()
+    dim_lines = "\n".join(
+        f"  {d.id.upper()} – {d.name}: {d.score}/100 (weight {d.weight:.0%}, gap: {d.priority})"
+        for d in dimension_scores
     )
 
+    gaps = [d for d in dimension_scores if d.priority in ("critical", "significant")]
+    gap_names = ", ".join(d.name for d in gaps) if gaps else "None"
+
     return f"""You are an EU compliance expert for Indonesian SME exporters (IEU-CEPA).
-Analyse the following compliance scan and return a structured assessment.
-IMPORTANT: All text values in the JSON (missing_requirements, action_plan, analysis) must be written in {lang_name}.
+Analyse the following dimension-based readiness scan and return a structured assessment.
+IMPORTANT: All text values in the JSON must be written in {lang_name}.
 
 COMPANY: {data.company_name}
 SECTOR: {data.sector}
 PRODUCT: {data.product_type}
+TARGET MARKET: {data.target_country or 'EU'}
+EXPORT EXPERIENCE: {data.export_experience or 'Unknown'}
 
-COMPLIANCE CHECKLIST:
-{checklist_text}
+DIMENSION SCORES (0-100):
+{dim_lines}
 
-Fulfilled: {len(completed)}/{len(checklist)} requirements
-Preliminary raw score: {raw_score}/100
+Overall weighted score: {overall}/100
+Priority gaps: {gap_names}
 
 TASK:
 Return a JSON response in exactly this format (no markdown code block):
 {{
-  "score": <integer 0-100, weighted by importance of requirements>,
-  "risk_level": "<'Low' if score >= 70, 'Medium' if 40-69, 'High' if < 40>",
-  "completed_requirements": {_json.dumps(completed)},
-  "missing_requirements": [<list of missing requirements as short strings in {lang_name}>],
-  "action_plan": [<prioritised action recommendations in {lang_name}, max. 6 concrete steps>],
-  "analysis": "<Detailed analysis in {lang_name} in 3-4 sentences: strengths, risks, urgency>"
+  "score": {overall},
+  "risk_level": "{'Low' if overall >= 70 else ('Medium' if overall >= 40 else 'High')}",
+  "completed_requirements": [<list of dimensions/areas where score >= 60 in {lang_name}>],
+  "missing_requirements": [<list of key missing items for gap dimensions in {lang_name}>],
+  "action_plan": [<max 6 prioritised actions as plain strings in {lang_name}>],
+  "action_items": [
+    {{
+      "text": "<concrete action step in {lang_name}>",
+      "dimension": "<e.g. D1, D2, ...>",
+      "effort": "<'low', 'medium', or 'high'>",
+      "priority": "<'critical', 'significant', or 'monitored'>"
+    }}
+  ],
+  "analysis": "<3-4 sentence analysis in {lang_name}: key strengths, critical gaps, urgency>"
 }}
 
-Consider:
-- Sector-specific risks for {data.sector} (e.g. EUDR for wood/palm oil, CE for electronics)
-- IEU-CEPA requirements and EU market access conditions
-- Prioritisation by implementation urgency and penalty risk
-- Practical feasibility for small Indonesian companies
+Rules for action_items:
+- Generate 4-8 items, ordered by urgency (critical first)
+- effort = 'high' means weeks/months; 'medium' = days/weeks; 'low' = hours/days
+- Only include items for dimensions with score < 80
+- Be concrete and practical for an Indonesian SME
+
+Consider sector-specific risks for {data.sector} and IEU-CEPA trade requirements.
 """
 
 
@@ -214,12 +313,16 @@ def chat(request: ChatRequest) -> ChatResponse:
 @app.post("/analyze-readiness", response_model=ReadinessResponse, summary="Compliance readiness scan")
 def analyze_readiness(request: ReadinessScanRequest) -> ReadinessResponse:
     """
-    Analyze a company's EU compliance readiness based on a checklist scan.
-    Returns a score, risk level, missing requirements, and a prioritized action plan.
+    Analyze a company's EU compliance readiness based on dimension-based assessment.
+    Returns a score, risk level, dimension scores, gap classifications, and a prioritised action plan.
     """
     import json
 
-    prompt = _build_readiness_prompt(request)
+    # Calculate dimension scores deterministically first
+    dimension_scores = _calc_dimension_scores(request)
+    overall_score = round(sum(d.score * d.weight for d in dimension_scores))
+
+    prompt = _build_readiness_prompt(request, dimension_scores)
 
     # Use RAG so the analysis is grounded in the indexed regulation documents
     try:
@@ -245,28 +348,37 @@ def analyze_readiness(request: ReadinessScanRequest) -> ReadinessResponse:
     try:
         parsed: dict[str, Any] = json.loads(raw_answer)
     except json.JSONDecodeError:
-        # Graceful fallback: return what we can parse structurally
-        checklist_fields = [
-            "compliance_dpp", "compliance_eudr", "compliance_ce",
-            "compliance_esg", "compliance_origin", "compliance_food_safety",
-        ]
-        completed = sum(1 for f in checklist_fields if getattr(request, f))
-        score = int(completed / len(checklist_fields) * 100)
-        risk = "Low" if score >= 70 else ("Medium" if score >= 40 else "High")
+        risk = "Low" if overall_score >= 70 else ("Medium" if overall_score >= 40 else "High")
         return ReadinessResponse(
-            score=score,
+            score=overall_score,
             risk_level=risk,
             completed_requirements=[],
             missing_requirements=[],
-            action_plan=["KI-Antwort konnte nicht verarbeitet werden – bitte erneut versuchen."],
+            action_plan=["Analysis could not be processed – please try again."],
+            action_items=[],
+            dimension_scores=dimension_scores,
             analysis=raw_answer[:500],
         )
 
+    # Parse structured action_items if present
+    raw_items = parsed.get("action_items", [])
+    action_items: list[ActionItem] = []
+    for item in raw_items:
+        if isinstance(item, dict) and "text" in item:
+            action_items.append(ActionItem(
+                text=str(item.get("text", "")),
+                dimension=str(item.get("dimension", "")).upper(),
+                effort=str(item.get("effort", "medium")).lower(),
+                priority=str(item.get("priority", "significant")).lower(),
+            ))
+
     return ReadinessResponse(
-        score=int(parsed.get("score", 0)),
+        score=int(parsed.get("score", overall_score)),
         risk_level=str(parsed.get("risk_level", "High")),
         completed_requirements=list(parsed.get("completed_requirements", [])),
         missing_requirements=list(parsed.get("missing_requirements", [])),
         action_plan=list(parsed.get("action_plan", [])),
+        action_items=action_items,
+        dimension_scores=dimension_scores,
         analysis=str(parsed.get("analysis", "")),
     )

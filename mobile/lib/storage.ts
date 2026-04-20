@@ -17,6 +17,24 @@ export interface User {
   sector: string;
 }
 
+export type GapPriority = "critical" | "significant" | "monitored" | "good";
+export type EffortLevel = "low" | "medium" | "high";
+
+export interface DimensionScore {
+  id: string;          // 'd1'–'d6'
+  name: string;
+  score: number;       // 0–100
+  weight: number;
+  priority: GapPriority;
+}
+
+export interface ActionItem {
+  text: string;
+  dimension: string;   // 'D1'–'D6'
+  effort: EffortLevel;
+  priority: GapPriority;
+}
+
 export interface ScanResult {
   id: string;
   company_name: string;
@@ -26,6 +44,8 @@ export interface ScanResult {
   missing_requirements: string[];
   completed_requirements: string[];
   action_plan: string[];
+  action_items?: ActionItem[];
+  dimension_scores?: DimensionScore[];
   created_at: string;
 }
 

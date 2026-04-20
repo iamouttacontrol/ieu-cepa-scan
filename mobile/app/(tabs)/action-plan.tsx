@@ -9,26 +9,31 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import { storage, ScanResult } from "@/lib/storage";
+import { storage, ScanResult, ActionItem, GapPriority, EffortLevel } from "@/lib/storage";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 
-type Priority = "all" | "high" | "medium" | "low";
+type FilterKey = "all" | GapPriority;
+const FILTER_KEYS: FilterKey[] = ["all", "critical", "significant", "monitored"];
 
-const FILTER_KEYS: Priority[] = ["all", "high", "medium", "low"];
-
-function getPriorityForIndex(index: number, total: number): Priority {
-  const ratio = index / total;
-  if (ratio < 0.34) return "high";
-  if (ratio < 0.67) return "medium";
-  return "low";
+// Derive ActionItems from scan — prefer structured action_items, fall back to action_plan strings
+function buildActionItems(scan: ScanResult): ActionItem[] {
+  if (scan.action_items && scan.action_items.length > 0) {
+    return scan.action_items;
+  }
+  // Legacy fallback: derive priority from position
+  const total = scan.action_plan.length;
+  return scan.action_plan.map((text, idx) => {
+    const ratio = total > 1 ? idx / (total - 1) : 0;
+    const priority: GapPriority = ratio < 0.34 ? "critical" : ratio < 0.67 ? "significant" : "monitored";
+    const effort: EffortLevel = ratio < 0.34 ? "high" : ratio < 0.67 ? "medium" : "low";
+    return { text, dimension: "", effort, priority };
+  });
 }
 
-interface ActionItem {
+interface TrackedItem extends ActionItem {
   id: string;
-  text: string;
-  priority: Priority;
   completed: boolean;
 }
 
@@ -37,29 +42,24 @@ export default function ActionPlanScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const router = useRouter();
+
   const [scan, setScan] = useState<ScanResult | null>(null);
-  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
-  const [filter, setFilter] = useState<Priority>("all");
+  const [items, setItems] = useState<TrackedItem[]>([]);
+  const [filter, setFilter] = useState<FilterKey>("all");
 
-  function getPriorityColor(priority: Priority): string {
-    if (priority === "high") return colors.error;
-    if (priority === "medium") return colors.warning;
-    if (priority === "low") return colors.success;
-    return colors.textSecondary;
+  // ── Color helpers ──────────────────────────────────────────────────────────
+
+  function priorityColor(p: GapPriority): string {
+    if (p === "critical") return colors.error;
+    if (p === "significant") return colors.warning;
+    if (p === "monitored") return colors.primary;
+    return colors.success;
   }
 
-  function getPriorityBg(priority: Priority): string {
-    if (priority === "high") return colors.error + "1A";
-    if (priority === "medium") return colors.warning + "1A";
-    if (priority === "low") return colors.success + "1A";
-    return colors.background;
-  }
-
-  function getPriorityBorderColor(priority: Priority): string {
-    if (priority === "high") return colors.error + "40";
-    if (priority === "medium") return colors.warning + "40";
-    if (priority === "low") return colors.success + "40";
-    return colors.border;
+  function effortColor(e: EffortLevel): string {
+    if (e === "high") return colors.error;
+    if (e === "medium") return colors.warning;
+    return colors.success;
   }
 
   function getRiskColor(riskLevel: string): string {
@@ -78,6 +78,8 @@ export default function ActionPlanScreen() {
     return riskLevel ?? "–";
   };
 
+  // ── Load data ──────────────────────────────────────────────────────────────
+
   useFocusEffect(
     useCallback(() => {
       loadData();
@@ -88,26 +90,25 @@ export default function ActionPlanScreen() {
     const latestScan = await storage.getLastScan();
     if (latestScan) {
       setScan(latestScan);
-      const saved = await storage.getActionCompleted(latestScan.id);
-      const items: ActionItem[] = latestScan.action_plan.map((text, idx) => ({
+      const savedCompleted = await storage.getActionCompleted(latestScan.id);
+      const actionItems = buildActionItems(latestScan);
+      const tracked: TrackedItem[] = actionItems.map((item, idx) => ({
+        ...item,
         id: `${latestScan.id}-${idx}`,
-        text,
-        priority: getPriorityForIndex(idx, latestScan.action_plan.length),
-        completed: saved[idx] ?? false,
+        completed: savedCompleted[idx] ?? false,
       }));
-      setActionItems(items);
+      setItems(tracked);
     } else {
       setScan(null);
-      setActionItems([]);
+      setItems([]);
     }
   };
 
   const toggleItem = (id: string) => {
-    setActionItems((prev) => {
+    setItems((prev) => {
       const updated = prev.map((item) =>
         item.id === id ? { ...item, completed: !item.completed } : item
       );
-      // Persist completed state
       if (scan) {
         storage.setActionCompleted(scan.id, updated.map((i) => i.completed));
       }
@@ -115,32 +116,38 @@ export default function ActionPlanScreen() {
     });
   };
 
-  const filteredItems =
-    filter === "all" ? actionItems : actionItems.filter((i) => i.priority === filter);
+  // ── Derived state ──────────────────────────────────────────────────────────
 
-  const completedCount = actionItems.filter((i) => i.completed).length;
-  const totalCount = actionItems.length;
+  const filteredItems =
+    filter === "all" ? items : items.filter((i) => i.priority === filter);
+
+  const completedCount = items.filter((i) => i.completed).length;
+  const totalCount = items.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const getFilterLabel = (key: Priority): string => {
-    switch (key) {
-      case "all": return t("actionPlan.filter.all");
-      case "high": return t("actionPlan.filter.high");
-      case "medium": return t("actionPlan.filter.medium");
-      case "low": return t("actionPlan.filter.low");
+  const countForFilter = (key: FilterKey) =>
+    key === "all" ? items.length : items.filter((i) => i.priority === key).length;
+
+  const getPriorityLabel = (p: GapPriority): string => {
+    switch (p) {
+      case "critical": return t("actionPlan.priority.critical");
+      case "significant": return t("actionPlan.priority.significant");
+      case "monitored": return t("actionPlan.priority.monitored");
+      default: return p;
     }
   };
 
-  const getPriorityLabel = (priority: Priority): string => {
-    switch (priority) {
-      case "high": return t("actionPlan.priority.high");
-      case "medium": return t("actionPlan.priority.medium");
-      case "low": return t("actionPlan.priority.low");
-      default: return priority;
-    }
+  const getEffortLabel = (e: EffortLevel): string => {
+    return t(`scan.effort.${e}`, { defaultValue: e });
+  };
+
+  const getFilterLabel = (key: FilterKey): string => {
+    if (key === "all") return t("actionPlan.filter.all");
+    return t(`actionPlan.filter.${key}`, { defaultValue: key });
   };
 
   // ── Empty state ────────────────────────────────────────────────────────────
+
   if (!scan) {
     return (
       <>
@@ -151,17 +158,7 @@ export default function ActionPlanScreen() {
             <Text style={{ color: colors.onPrimary + "AA", fontSize: 12, marginTop: 2 }}>{t("actionPlan.subtitle")}</Text>
           </View>
           <View style={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32 }}>
-            <View
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: 40,
-                backgroundColor: colors.surfaceAlt,
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 16,
-              }}
-            >
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.surfaceAlt, alignItems: "center", justifyContent: "center", marginBottom: 16 }}>
               <Ionicons name="list-circle-outline" size={44} color={colors.textSecondary} />
             </View>
             <Text style={{ color: colors.text, fontWeight: "bold", fontSize: 18, textAlign: "center" }}>
@@ -171,13 +168,7 @@ export default function ActionPlanScreen() {
               {t("actionPlan.noScanText")}
             </Text>
             <TouchableOpacity
-              style={{
-                backgroundColor: colors.primary,
-                borderRadius: 12,
-                paddingHorizontal: 32,
-                paddingVertical: 14,
-                marginTop: 24,
-              }}
+              style={{ backgroundColor: colors.primary, borderRadius: 12, paddingHorizontal: 32, paddingVertical: 14, marginTop: 24 }}
               onPress={() => router.push("/(tabs)/scan")}
             >
               <Text style={{ color: colors.buttonText, fontWeight: "bold", fontSize: 15 }}>{t("common.startScan")}</Text>
@@ -189,10 +180,12 @@ export default function ActionPlanScreen() {
   }
 
   // ── Loaded state ───────────────────────────────────────────────────────────
+
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor={colors.primaryStrong} />
       <View style={{ flex: 1, backgroundColor: colors.background }}>
+
         {/* Header */}
         <View style={{ backgroundColor: colors.primaryStrong, paddingTop: insets.top + 12, paddingBottom: 20, paddingHorizontal: 20 }}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -202,14 +195,7 @@ export default function ActionPlanScreen() {
                 {scan.company_name} · {t("common.score")}: {scan.score}
               </Text>
             </View>
-            <View
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-                borderRadius: 12,
-                backgroundColor: getRiskColor(scan.risk_level) + "33",
-              }}
-            >
+            <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: getRiskColor(scan.risk_level) + "33" }}>
               <Text style={{ color: colors.onPrimary, fontSize: 12, fontWeight: "700" }}>
                 {getRiskLabel(scan.risk_level)}
               </Text>
@@ -225,40 +211,28 @@ export default function ActionPlanScreen() {
               </Text>
             </View>
             <View style={{ height: 6, backgroundColor: colors.onPrimary + "40", borderRadius: 3, overflow: "hidden" }}>
-              <View
-                style={{
-                  height: "100%",
-                  width: `${progressPercent}%`,
-                  backgroundColor: colors.onPrimary,
-                  borderRadius: 3,
-                }}
-              />
+              <View style={{ height: "100%", width: `${progressPercent}%`, backgroundColor: colors.onPrimary, borderRadius: 3 }} />
             </View>
           </View>
         </View>
 
         {/* Filter Tabs */}
-        <View style={{ flexDirection: "row", paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6, gap: 8 }}>
+        <View style={{ flexDirection: "row", paddingHorizontal: 20, paddingTop: 12, paddingBottom: 6, gap: 8 }}>
           {FILTER_KEYS.map((key) => {
-            const count =
-              key === "all"
-                ? actionItems.length
-                : actionItems.filter((i) => i.priority === key).length;
+            const count = countForFilter(key);
             const isActive = filter === key;
+            const activeColor = key === "critical" ? colors.error : key === "significant" ? colors.warning : key === "monitored" ? colors.primary : colors.primaryStrong;
             return (
               <TouchableOpacity
                 key={key}
                 style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 7,
-                  borderRadius: 20,
-                  borderWidth: 1,
-                  backgroundColor: isActive ? colors.primaryStrong : colors.surface,
-                  borderColor: isActive ? colors.primaryStrong : colors.border,
+                  paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1,
+                  backgroundColor: isActive ? (key === "all" ? colors.primaryStrong : activeColor + "22") : colors.surface,
+                  borderColor: isActive ? (key === "all" ? colors.primaryStrong : activeColor) : colors.border,
                 }}
                 onPress={() => setFilter(key)}
               >
-                <Text style={{ fontSize: 12, fontWeight: "600", color: isActive ? colors.onPrimary : colors.textSecondary }}>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: isActive ? (key === "all" ? colors.onPrimary : activeColor) : colors.textSecondary }}>
                   {getFilterLabel(key)} ({count})
                 </Text>
               </TouchableOpacity>
@@ -279,89 +253,86 @@ export default function ActionPlanScreen() {
               </Text>
             </View>
           ) : (
-            filteredItems.map((item, idx) => (
-              <TouchableOpacity
-                key={item.id}
-                style={{
-                  borderRadius: 16,
-                  padding: 14,
-                  marginBottom: 10,
-                  borderWidth: 1.5,
-                  backgroundColor: item.completed ? colors.background : getPriorityBg(item.priority),
-                  borderColor: item.completed ? colors.border : getPriorityBorderColor(item.priority),
-                  opacity: item.completed ? 0.65 : 1,
-                }}
-                onPress={() => toggleItem(item.id)}
-                activeOpacity={0.75}
-              >
-                <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                  {/* Checkbox */}
-                  <View
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 12,
-                      borderWidth: 2,
-                      marginRight: 12,
-                      marginTop: 1,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      backgroundColor: item.completed ? colors.success : "transparent",
-                      borderColor: item.completed ? colors.success : colors.border,
-                    }}
-                  >
-                    {item.completed && <Ionicons name="checkmark" size={13} color={colors.onPrimary} />}
-                  </View>
-
-                  <View style={{ flex: 1 }}>
-                    {/* Priority badge + index */}
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                      <View
-                        style={{
-                          paddingHorizontal: 8,
-                          paddingVertical: 3,
-                          borderRadius: 8,
-                          backgroundColor: getPriorityColor(item.priority) + "22",
-                        }}
-                      >
-                        <Text style={{ fontSize: 11, fontWeight: "700", color: getPriorityColor(item.priority) }}>
-                          {getPriorityLabel(item.priority)}
-                        </Text>
-                      </View>
-                      <Text style={{ color: colors.border, fontSize: 11 }}>#{idx + 1}</Text>
-                    </View>
-
-                    {/* Text */}
-                    <Text
+            filteredItems.map((item, idx) => {
+              const pc = priorityColor(item.priority);
+              const ec = effortColor(item.effort);
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={{
+                    borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1.5,
+                    backgroundColor: item.completed ? colors.background : pc + "0D",
+                    borderColor: item.completed ? colors.border : pc + "44",
+                    opacity: item.completed ? 0.65 : 1,
+                  }}
+                  onPress={() => toggleItem(item.id)}
+                  activeOpacity={0.75}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+                    {/* Checkbox */}
+                    <View
                       style={{
-                        fontSize: 13,
-                        lineHeight: 19,
-                        color: item.completed ? colors.textSecondary : colors.text,
-                        textDecorationLine: item.completed ? "line-through" : "none",
+                        width: 24, height: 24, borderRadius: 12, borderWidth: 2,
+                        marginRight: 12, marginTop: 1, alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        backgroundColor: item.completed ? colors.success : "transparent",
+                        borderColor: item.completed ? colors.success : colors.border,
                       }}
                     >
-                      {item.text}
-                    </Text>
+                      {item.completed && <Ionicons name="checkmark" size={13} color={colors.onPrimary} />}
+                    </View>
+
+                    <View style={{ flex: 1 }}>
+                      {/* Badges row */}
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6, flexWrap: "wrap", gap: 4 }}>
+                        <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                          {/* Priority badge */}
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: pc + "22" }}>
+                            <Text style={{ fontSize: 11, fontWeight: "700", color: pc }}>
+                              {getPriorityLabel(item.priority)}
+                            </Text>
+                          </View>
+                          {/* Effort badge */}
+                          <View style={{ paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8, backgroundColor: ec + "1A", flexDirection: "row", alignItems: "center", gap: 3 }}>
+                            <Ionicons name="time-outline" size={10} color={ec} />
+                            <Text style={{ fontSize: 10, fontWeight: "600", color: ec }}>
+                              {t("actionPlan.effort")}: {getEffortLabel(item.effort)}
+                            </Text>
+                          </View>
+                        </View>
+                        {/* Dimension tag + index */}
+                        <View style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
+                          {item.dimension ? (
+                            <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, backgroundColor: colors.surfaceAlt }}>
+                              <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: "600" }}>{item.dimension}</Text>
+                            </View>
+                          ) : null}
+                          <Text style={{ color: colors.border, fontSize: 11 }}>#{idx + 1}</Text>
+                        </View>
+                      </View>
+
+                      {/* Action text */}
+                      <Text
+                        style={{
+                          fontSize: 13, lineHeight: 19,
+                          color: item.completed ? colors.textSecondary : colors.text,
+                          textDecorationLine: item.completed ? "line-through" : "none",
+                        }}
+                      >
+                        {item.text}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            ))
+                </TouchableOpacity>
+              );
+            })
           )}
 
-          {/* Start new scan CTA */}
+          {/* New scan CTA */}
           <TouchableOpacity
             style={{
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: 16,
-              paddingVertical: 14,
-              alignItems: "center",
-              marginTop: 8,
-              marginBottom: 32,
-              flexDirection: "row",
-              justifyContent: "center",
-              gap: 8,
+              borderWidth: 1, borderColor: colors.border, borderRadius: 16,
+              paddingVertical: 14, alignItems: "center", marginTop: 8, marginBottom: 32,
+              flexDirection: "row", justifyContent: "center", gap: 8,
               backgroundColor: colors.card,
             }}
             onPress={() => router.push("/(tabs)/scan")}

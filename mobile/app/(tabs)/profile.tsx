@@ -21,7 +21,7 @@ import { useTheme } from "@/context/ThemeContext";
 const LANGUAGES = [
   { code: "de", label: "Deutsch", flag: "🇩🇪" },
   { code: "en", label: "English", flag: "🇬🇧" },
-  { code: "id", label: "Bahasa", flag: "🇮🇩" },
+  { code: "id", label: "Bahasa Indonesia", flag: "🇮🇩" },
 ];
 
 export default function ProfileScreen() {
