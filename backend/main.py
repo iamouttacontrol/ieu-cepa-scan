@@ -29,9 +29,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# CORS_ALLOWED_ORIGINS: comma-separated list, e.g. "https://my-app.vercel.app".
+# Falls back to "*" (open) for local/prototype use.
+_cors_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "*")
+_cors_origins = (
+    ["*"] if _cors_origins_env == "*" else [o.strip() for o in _cors_origins_env.split(",")]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # prototype — restrict in production
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
