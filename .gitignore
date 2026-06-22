@@ -14,7 +14,6 @@ dist-ssr
 
 # Python virtual environment
 backend/venv/
-backend/chroma_db/
 backend/.env
 
 # Editor directories and files
