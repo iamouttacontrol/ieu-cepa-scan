@@ -17,16 +17,13 @@ import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
+import i18n from "@/lib/i18n";
+import { storage } from "@/lib/storage";
 
-const SECTORS = [
-  "Herstellung",
-  "Textil & Bekleidung",
-  "Lebensmittel & Getränke",
-  "Elektronik",
-  "Möbel & Holz",
-  "Chemikalien",
-  "Landwirtschaft",
-  "Sonstiges",
+const LANGUAGES = [
+  { code: "de", flag: "🇩🇪" },
+  { code: "en", flag: "🇬🇧" },
+  { code: "id", flag: "🇮🇩" },
 ];
 
 type Tab = "login" | "register";
@@ -39,6 +36,14 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
   const router = useRouter();
+  const [currentLang, setCurrentLang] = useState(i18n.language);
+  const SECTORS = t("scan.options.sectors", { returnObjects: true }) as string[];
+
+  const handleLanguageChange = async (code: string) => {
+    await i18n.changeLanguage(code);
+    await storage.setLanguage(code);
+    setCurrentLang(code);
+  };
 
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -144,6 +149,30 @@ export default function AuthScreen() {
               alignItems: "center",
             }}
           >
+            <View style={{ flexDirection: "row", alignSelf: "flex-end", gap: 6, marginBottom: 12 }}>
+              {LANGUAGES.map((lang) => {
+                const isActive = currentLang === lang.code;
+                return (
+                  <TouchableOpacity
+                    key={lang.code}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: isActive ? colors.onPrimary + "33" : "transparent",
+                      borderWidth: isActive ? 1.5 : 0,
+                      borderColor: colors.onPrimary + "66",
+                    }}
+                    onPress={() => handleLanguageChange(lang.code)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={{ fontSize: 16 }}>{lang.flag}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
             <View
               style={{
                 width: 72,

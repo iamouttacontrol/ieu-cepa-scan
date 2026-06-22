@@ -285,6 +285,9 @@ const resources = {
           significant: "Bedeutend",
           monitored: "Beobachten",
         },
+        expertTitle: "Expertenberatung benötigt?",
+        expertText: "Bei komplexen oder rechtskritischen Fragen empfehlen wir eine Beratung durch einen zertifizierten EU-Compliance-Experten.",
+        expertBtn: "Experten kontaktieren",
       },
       learning: {
         title: "Learning Hub",
@@ -667,6 +670,9 @@ const resources = {
           significant: "Significant",
           monitored: "Monitored",
         },
+        expertTitle: "Need Expert Advice?",
+        expertText: "For complex or legally sensitive questions, we recommend consulting a certified EU compliance expert.",
+        expertBtn: "Contact an Expert",
       },
       learning: {
         title: "Learning Hub",
@@ -924,6 +930,9 @@ const resources = {
           medium: "Sedang",
           low: "Rendah",
         },
+        expertTitle: "Butuh Saran Ahli?",
+        expertText: "Untuk pertanyaan kompleks atau sensitif secara hukum, kami menyarankan konsultasi dengan ahli kepatuhan EU bersertifikat.",
+        expertBtn: "Hubungi Ahli",
       },
       learning: {
         title: "Hub Pembelajaran",

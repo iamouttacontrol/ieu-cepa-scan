@@ -5,6 +5,8 @@ import {
   ScrollView,
   TouchableOpacity,
   StatusBar,
+  Linking,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -327,11 +329,41 @@ export default function ActionPlanScreen() {
             })
           )}
 
+          {/* Expert contact card */}
+          <View style={{
+            borderRadius: 16, padding: 16, marginTop: 8, marginBottom: 12,
+            backgroundColor: colors.primary + "12", borderWidth: 1, borderColor: colors.primary + "33",
+          }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <Ionicons name="people-outline" size={20} color={colors.primary} />
+              <Text style={{ color: colors.primary, fontWeight: "700", fontSize: 14 }}>{t("actionPlan.expertTitle")}</Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 18, marginBottom: 12 }}>
+              {t("actionPlan.expertText")}
+            </Text>
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.primary, borderRadius: 12,
+                paddingVertical: 11, alignItems: "center",
+                flexDirection: "row", justifyContent: "center", gap: 8,
+              }}
+              onPress={() => {
+                const subject = encodeURIComponent("EU Compliance Expert Consultation");
+                Linking.openURL(`mailto:expert@ieu-cepa.com?subject=${subject}`).catch(() => {
+                  Alert.alert(t("actionPlan.expertTitle"), "expert@ieu-cepa.com");
+                });
+              }}
+            >
+              <Ionicons name="mail-outline" size={15} color={colors.buttonText} />
+              <Text style={{ color: colors.buttonText, fontWeight: "700", fontSize: 14 }}>{t("actionPlan.expertBtn")}</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* New scan CTA */}
           <TouchableOpacity
             style={{
               borderWidth: 1, borderColor: colors.border, borderRadius: 16,
-              paddingVertical: 14, alignItems: "center", marginTop: 8, marginBottom: 32,
+              paddingVertical: 14, alignItems: "center", marginTop: 0, marginBottom: 32,
               flexDirection: "row", justifyContent: "center", gap: 8,
               backgroundColor: colors.card,
             }}

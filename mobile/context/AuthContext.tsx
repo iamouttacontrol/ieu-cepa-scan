@@ -75,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await storage.removeUser();
+    await storage.clearScans();
     setUser(null);
   };
 

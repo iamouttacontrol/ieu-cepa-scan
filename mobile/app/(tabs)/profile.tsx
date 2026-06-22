@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Alert,
+  Platform,
   Switch,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -23,6 +24,17 @@ const LANGUAGES = [
   { code: "en", label: "English", flag: "🇬🇧" },
   { code: "id", label: "Bahasa Indonesia", flag: "🇮🇩" },
 ];
+
+function translateSector(sector: string): string {
+  const currentSectors = i18n.t("scan.options.sectors", { returnObjects: true }) as string[];
+  if (currentSectors.includes(sector)) return sector;
+  for (const lng of ["de", "en", "id"]) {
+    const langSectors = i18n.getFixedT(lng)("scan.options.sectors", { returnObjects: true }) as string[];
+    const idx = langSectors.indexOf(sector);
+    if (idx !== -1 && currentSectors[idx]) return currentSectors[idx];
+  }
+  return sector;
+}
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
@@ -47,6 +59,12 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
+    if (Platform.OS === "web") {
+      if (window.confirm(`${t("profile.logoutConfirm")}\n${t("profile.logoutText")}`)) {
+        logout();
+      }
+      return;
+    }
     Alert.alert(
       t("profile.logoutConfirm"),
       t("profile.logoutText"),
@@ -55,10 +73,7 @@ export default function ProfileScreen() {
         {
           text: t("profile.logout"),
           style: "destructive",
-          onPress: async () => {
-            await logout();
-            router.replace("/auth");
-          },
+          onPress: () => { logout(); },
         },
       ]
     );
@@ -125,7 +140,7 @@ export default function ProfileScreen() {
             <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8 }}>
               <Ionicons name="business-outline" size={13} color={colors.onPrimary + "66"} />
               <Text style={{ color: colors.onPrimary + "66", fontSize: 12, marginLeft: 5 }}>
-                {user.company} · {user.sector}
+                {user.company} · {translateSector(user.sector)}
               </Text>
             </View>
           ) : null}
@@ -159,7 +174,7 @@ export default function ProfileScreen() {
             <ProfileRow icon="person-outline" label={t("auth.name")} value={user?.name ?? "–"} />
             <ProfileRow icon="mail-outline" label={t("auth.email")} value={user?.email ?? "–"} />
             <ProfileRow icon="business-outline" label={t("auth.company")} value={user?.company ?? "–"} />
-            <ProfileRow icon="briefcase-outline" label={t("auth.sector")} value={user?.sector ?? "–"} last />
+            <ProfileRow icon="briefcase-outline" label={t("auth.sector")} value={user?.sector ? translateSector(user.sector) : "–"} last />
           </SectionCard>
 
           {/* Settings */}
