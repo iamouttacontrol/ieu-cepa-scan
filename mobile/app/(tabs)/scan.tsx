@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
   StatusBar,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { storage, ScanResult, DimensionScore, ActionItem, GapPriority } from "@/lib/storage";
+import { showAlert } from "@/lib/alert";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -421,11 +421,11 @@ export default function ScanScreen() {
 
   const handleNext = () => {
     if (step === 0 && !form.company_name.trim()) {
-      Alert.alert(t("scan.missingFieldTitle"), t("scan.missingField.company"));
+      showAlert(t("scan.missingFieldTitle"), t("scan.missingField.company"));
       return;
     }
     if (step === 1 && !form.product_type.trim()) {
-      Alert.alert(t("scan.missingFieldTitle"), t("scan.missingField.product"));
+      showAlert(t("scan.missingFieldTitle"), t("scan.missingField.product"));
       return;
     }
     if (step === 2) {

@@ -6,12 +6,12 @@ import {
   TouchableOpacity,
   StatusBar,
   Linking,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { storage, ScanResult, ActionItem, GapPriority, EffortLevel } from "@/lib/storage";
+import { showAlert } from "@/lib/alert";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
@@ -350,7 +350,7 @@ export default function ActionPlanScreen() {
               onPress={() => {
                 const subject = encodeURIComponent("EU Compliance Expert Consultation");
                 Linking.openURL(`mailto:expert@ieu-cepa.com?subject=${subject}`).catch(() => {
-                  Alert.alert(t("actionPlan.expertTitle"), "expert@ieu-cepa.com");
+                  showAlert(t("actionPlan.expertTitle"), "expert@ieu-cepa.com");
                 });
               }}
             >

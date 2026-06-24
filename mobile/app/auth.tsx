@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   StatusBar,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -19,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import i18n from "@/lib/i18n";
 import { storage } from "@/lib/storage";
+import { showAlert } from "@/lib/alert";
 
 const LANGUAGES = [
   { code: "de", flag: "🇩🇪" },
@@ -71,19 +71,20 @@ export default function AuthScreen() {
 
   const handleLogin = async () => {
     if (!loginEmail.trim()) {
-      Alert.alert(t("auth.error"), t("auth.emailRequired"));
+      showAlert(t("auth.error"), t("auth.emailRequired"));
       return;
     }
     if (!loginPassword.trim()) {
-      Alert.alert(t("auth.error"), t("auth.passwordRequired"));
+      showAlert(t("auth.error"), t("auth.passwordRequired"));
       return;
     }
     setLoading(true);
     try {
       await login(loginEmail.trim(), loginPassword);
       router.replace("/(tabs)/dashboard");
-    } catch {
-      Alert.alert(t("auth.loginFailed"), t("auth.tryAgain"));
+    } catch (e) {
+      console.error("Login failed", e);
+      showAlert(t("auth.loginFailed"), t("auth.tryAgain"));
     } finally {
       setLoading(false);
     }
@@ -91,23 +92,23 @@ export default function AuthScreen() {
 
   const handleRegister = async () => {
     if (!regName.trim()) {
-      Alert.alert(t("auth.error"), t("auth.nameRequired"));
+      showAlert(t("auth.error"), t("auth.nameRequired"));
       return;
     }
     if (!regEmail.trim()) {
-      Alert.alert(t("auth.error"), t("auth.emailRequired"));
+      showAlert(t("auth.error"), t("auth.emailRequired"));
       return;
     }
     if (!regEmail.includes("@")) {
-      Alert.alert(t("auth.error"), t("auth.emailInvalid"));
+      showAlert(t("auth.error"), t("auth.emailInvalid"));
       return;
     }
     if (regPassword.length < 6) {
-      Alert.alert(t("auth.error"), t("auth.passwordTooShort"));
+      showAlert(t("auth.error"), t("auth.passwordTooShort"));
       return;
     }
     if (!regCompany.trim()) {
-      Alert.alert(t("auth.error"), t("auth.companyRequired"));
+      showAlert(t("auth.error"), t("auth.companyRequired"));
       return;
     }
     setLoading(true);
@@ -120,8 +121,9 @@ export default function AuthScreen() {
         sector: regSector,
       });
       router.replace("/(tabs)/dashboard");
-    } catch {
-      Alert.alert(t("auth.registerFailed"), t("auth.tryAgain"));
+    } catch (e) {
+      console.error("Registration failed", e);
+      showAlert(t("auth.registerFailed"), t("auth.tryAgain"));
     } finally {
       setLoading(false);
     }
