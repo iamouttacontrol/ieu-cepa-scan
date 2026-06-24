@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -319,7 +319,7 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
 // ── Main Screen ────────────────────────────────────────────────────────────────
 
 export default function ScanScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -370,6 +370,32 @@ export default function ScanScreen() {
 
   const [form, setForm] = useState<ScanFormData>(defaultForm);
   const [dimResponses, setDimResponses] = useState<Record<DimensionKey, ResponseValue[]>>(defaultDimResponses);
+
+  // Dropdown form fields store the translated option string. When the user
+  // switches language, remap each selected value to the new language by its
+  // index so the collapsed dropdowns update immediately instead of keeping the
+  // old language until reopened.
+  const remapOption = (value: string, optionsKey: string): string => {
+    const current = i18n.t(optionsKey, { returnObjects: true }) as string[];
+    if (current.includes(value)) return value;
+    for (const lng of ["de", "en", "id"]) {
+      const opts = i18n.getFixedT(lng)(optionsKey, { returnObjects: true }) as string[];
+      const idx = opts.indexOf(value);
+      if (idx !== -1 && current[idx]) return current[idx];
+    }
+    return value;
+  };
+
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      sector: remapOption(prev.sector, "scan.options.sectors"),
+      company_size: remapOption(prev.company_size, "scan.options.companySizes"),
+      target_country: remapOption(prev.target_country, "scan.options.targetCountries"),
+      export_experience: remapOption(prev.export_experience, "scan.options.exportExperiences"),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language]);
 
   const update = (key: keyof ScanFormData, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));

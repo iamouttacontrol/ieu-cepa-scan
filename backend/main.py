@@ -76,6 +76,28 @@ class DimensionInput(BaseModel):
     d6: list[int] = Field(default_factory=lambda: [0, 0, 0, 0])  # Market Access Fundamentals
 
 
+_PRIORITY_ALIASES = {
+    "critical": "critical", "kritisch": "critical",
+    "significant": "significant", "bedeutend": "significant",
+    "monitored": "monitored", "beobachten": "monitored",
+    "good": "good", "gut": "good",
+}
+_EFFORT_ALIASES = {
+    "low": "low", "gering": "low", "rendah": "low",
+    "medium": "medium", "mittel": "medium", "sedang": "medium",
+    "high": "high", "hoch": "high", "tinggi": "high",
+}
+
+
+def _normalize_enum(value: str, aliases: dict[str, str], default: str) -> str:
+    """Coerce an LLM-returned enum value back to its canonical English key.
+
+    The LLM is instructed to keep these as literal English keys, but it
+    occasionally translates them along with the surrounding text anyway.
+    """
+    return aliases.get(value.strip().lower(), default)
+
+
 class ActionItem(BaseModel):
     text: str
     dimension: str   # 'D1'–'D6'
@@ -241,6 +263,10 @@ Rules for action_items:
 - effort = 'high' means weeks/months; 'medium' = days/weeks; 'low' = hours/days
 - Only include items for dimensions with score < 80
 - Be concrete and practical for an Indonesian SME
+- IMPORTANT: the "effort" and "priority" values are machine-readable enum keys, not display
+  text — always return them as the literal English words 'low'/'medium'/'high' and
+  'critical'/'significant'/'monitored', even though {lang_name} is the language for all other
+  text fields. The app translates these keys into {lang_name} itself.
 
 Consider sector-specific risks for {data.sector} and IEU-CEPA trade requirements.
 """
@@ -375,8 +401,8 @@ def analyze_readiness(request: ReadinessScanRequest) -> ReadinessResponse:
             action_items.append(ActionItem(
                 text=str(item.get("text", "")),
                 dimension=str(item.get("dimension", "")).upper(),
-                effort=str(item.get("effort", "medium")).lower(),
-                priority=str(item.get("priority", "significant")).lower(),
+                effort=_normalize_enum(str(item.get("effort", "medium")), _EFFORT_ALIASES, "medium"),
+                priority=_normalize_enum(str(item.get("priority", "significant")), _PRIORITY_ALIASES, "significant"),
             ))
 
     return ReadinessResponse(

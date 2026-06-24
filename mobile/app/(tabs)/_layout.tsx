@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -7,7 +8,7 @@ type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
 
 interface TabConfig {
   name: string;
-  title: string;
+  titleKey: string;
   icon: IoniconsName;
   iconOutline: IoniconsName;
 }
@@ -15,37 +16,37 @@ interface TabConfig {
 const tabs: TabConfig[] = [
   {
     name: "dashboard",
-    title: "Dashboard",
+    titleKey: "tabs.dashboard",
     icon: "home",
     iconOutline: "home-outline",
   },
   {
     name: "scan",
-    title: "Scan",
+    titleKey: "tabs.scan",
     icon: "search-circle",
     iconOutline: "search-circle-outline",
   },
   {
     name: "action-plan",
-    title: "Aktionsplan",
+    titleKey: "tabs.actionPlan",
     icon: "list-circle",
     iconOutline: "list-circle-outline",
   },
   {
     name: "learning",
-    title: "Lernen",
+    titleKey: "tabs.learning",
     icon: "school",
     iconOutline: "school-outline",
   },
   {
     name: "knowledge",
-    title: "Knowledge",
+    titleKey: "tabs.knowledge",
     icon: "bookmarks",
     iconOutline: "bookmarks-outline",
   },
   {
     name: "profile",
-    title: "Profil",
+    titleKey: "tabs.profile",
     icon: "person-circle",
     iconOutline: "person-circle-outline",
   },
@@ -54,6 +55,7 @@ const tabs: TabConfig[] = [
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const tabBarHeight = 56 + insets.bottom;
 
   return (
@@ -81,7 +83,7 @@ export default function TabLayout() {
           key={tab.name}
           name={tab.name}
           options={{
-            title: tab.title,
+            title: t(tab.titleKey),
             tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
               <Ionicons
                 name={focused ? tab.icon : tab.iconOutline}

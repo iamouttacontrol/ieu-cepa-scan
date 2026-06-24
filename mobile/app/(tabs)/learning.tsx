@@ -99,7 +99,7 @@ export default function LearningScreen() {
     if (!newQuestion.trim()) return;
     const q: CommunityQuestion = {
       id: Date.now().toString(),
-      author: user?.name ?? "You",
+      author: user?.name ?? t("common.you"),
       text: newQuestion.trim(),
       timestamp: t("learning.justNow"),
       isOwn: true,
