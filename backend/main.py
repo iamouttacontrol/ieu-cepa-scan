@@ -59,6 +59,10 @@ class ChatRequest(BaseModel):
         default_factory=dict,
         description="Optional user profile context: company, sector, last_score, missing_requirements",
     )
+    document: str | None = Field(
+        default=None,
+        description="Optional relative path of a single PDF to restrict the answer to.",
+    )
 
 
 class ChatResponse(BaseModel):
@@ -334,6 +338,7 @@ def chat(request: ChatRequest) -> ChatResponse:
             chat_history=request.history,
             language=request.language,
             user_context=request.user_context,
+            document=request.document,
         )
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc))

@@ -17,9 +17,10 @@ import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
-import { API_BASE_URL } from "@/constants/api";
 import { ThemeColors } from "@/colors-indonesia";
 import * as WebBrowser from "expo-web-browser";
+import { DOCUMENTS, getDocUrl, KnowledgeDoc } from "@/lib/documents";
+import ChatModal, { ChatDocument } from "@/components/ChatModal";
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -27,12 +28,6 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface KnowledgeDoc {
-  filename: string;
-  name: string;
-  size_kb: number;
-}
 
 interface SubFolder {
   name: string;
@@ -110,33 +105,27 @@ export default function KnowledgeScreen() {
   const { colors } = useTheme();
   const { doc: selectedDoc } = useLocalSearchParams<{ doc?: string }>();
 
-  const [documents, setDocuments] = useState<KnowledgeDoc[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  // Documents are bundled with the app (no server request) — see
+  // backend/scripts/build_offline_pdfs.py and mobile/lib/documents.ts.
+  const [documents] = useState<KnowledgeDoc[]>(DOCUMENTS);
+  const [loading] = useState(false);
+  const [error] = useState(false);
   const [openingDoc, setOpeningDoc] = useState<string | null>(null);
   const [openFolders, setOpenFolders] = useState<Set<string>>(new Set());
   const [openSubfolders, setOpenSubfolders] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [chatVisible, setChatVisible] = useState(false);
+  const [chatDoc, setChatDoc] = useState<ChatDocument | null>(null);
   const lastAutoOpenedDoc = useRef<string | null>(null);
 
-  const fetchDocuments = async () => {
-    setLoading(true);
-    setError(false);
-    try {
-      const res = await fetch(`${API_BASE_URL}/documents`);
-      if (!res.ok) throw new Error();
-      const data: KnowledgeDoc[] = await res.json();
-      setDocuments(data);
-    } catch {
-      setError(true);
-    } finally {
-      setLoading(false);
-    }
+  const fetchDocuments = () => {
+    /* no-op: documents are bundled locally; kept for pull-to-refresh */
   };
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
+  const askAiAboutDoc = (doc: KnowledgeDoc) => {
+    setChatDoc({ filename: doc.filename, name: doc.name });
+    setChatVisible(true);
+  };
 
   // Auto-open PDF + expand parent folder when navigated from chat
   useEffect(() => {
@@ -166,7 +155,7 @@ export default function KnowledgeScreen() {
   }, [selectedDoc, documents]);
 
   const openPDF = async (doc: KnowledgeDoc) => {
-    const url = `${API_BASE_URL}/documents/${encodeURIComponent(doc.filename)}`;
+    const url = getDocUrl(doc);
     setOpeningDoc(doc.filename);
     try {
       await WebBrowser.openBrowserAsync(url, {
@@ -264,6 +253,26 @@ export default function KnowledgeScreen() {
             PDF · {doc.size_kb} KB
           </Text>
         </View>
+        <TouchableOpacity
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: colors.secondary + "1A",
+            borderWidth: 1,
+            borderColor: colors.secondary + "40",
+            borderRadius: 16,
+            paddingHorizontal: 9,
+            paddingVertical: 6,
+            marginLeft: 8,
+          }}
+          onPress={() => askAiAboutDoc(doc)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="sparkles" size={13} color={colors.secondary} />
+          <Text style={{ color: colors.secondary, fontSize: 10, fontWeight: "700", marginLeft: 4 }}>
+            {t("knowledge.aiAction")}
+          </Text>
+        </TouchableOpacity>
         <View
           style={{
             backgroundColor: catColor + "1A",
@@ -272,7 +281,7 @@ export default function KnowledgeScreen() {
             paddingVertical: 6,
             alignItems: "center",
             justifyContent: "center",
-            marginLeft: 8,
+            marginLeft: 6,
           }}
         >
           {isOpening ? (
@@ -599,6 +608,19 @@ export default function KnowledgeScreen() {
           </ScrollView>
         )}
       </View>
+
+      <ChatModal
+        visible={chatVisible}
+        onClose={() => setChatVisible(false)}
+        initialDocument={chatDoc}
+        onSourcePress={(source) => {
+          const norm = source.replace(/\\/g, "/");
+          const d =
+            documents.find((x) => x.filename === norm) ??
+            documents.find((x) => x.filename.endsWith(norm.split("/").pop() ?? ""));
+          if (d) openPDF(d);
+        }}
+      />
     </>
   );
 }

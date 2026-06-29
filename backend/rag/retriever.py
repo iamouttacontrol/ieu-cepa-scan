@@ -87,6 +87,7 @@ def get_rag_response(
     chat_history: list[dict[str, Any]],
     language: str = "de",
     user_context: dict | None = None,
+    document: str | None = None,
 ) -> dict[str, Any]:
     """
     Retrieve relevant document chunks and generate an answer using GPT-4o-mini.
@@ -94,15 +95,29 @@ def get_rag_response(
     Args:
         question:     The user's question string.
         chat_history: List of previous turns, each {"role": "user"|"assistant", "content": str}.
+        document:     Optional relative path of a single PDF to restrict retrieval to.
+                      Matching is separator-insensitive (\\ vs /).
 
     Returns:
         {"answer": str, "sources": list[str]}  where sources are PDF filenames (deduplicated).
     """
     vectorstore = _load_vectorstore()
 
-    # Retrieve top-K relevant chunks
-    retriever = vectorstore.as_retriever(search_kwargs={"k": TOP_K})
-    relevant_docs = retriever.invoke(question)
+    if document:
+        # Scope retrieval to a single document. The exact `source` format stored
+        # in ChromaDB (path separators) is not guaranteed, so we over-fetch and
+        # filter in Python on a normalized comparison instead of a Chroma filter.
+        target = document.replace("\\", "/")
+        retriever = vectorstore.as_retriever(search_kwargs={"k": TOP_K * 6})
+        candidates = retriever.invoke(question)
+        relevant_docs = [
+            d for d in candidates
+            if d.metadata.get("source", "").replace("\\", "/") == target
+        ][:TOP_K]
+    else:
+        # Retrieve top-K relevant chunks
+        retriever = vectorstore.as_retriever(search_kwargs={"k": TOP_K})
+        relevant_docs = retriever.invoke(question)
 
     # Build context block from retrieved chunks
     context_parts: list[str] = []

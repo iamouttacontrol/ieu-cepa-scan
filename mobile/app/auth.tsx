@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -56,6 +56,23 @@ export default function AuthScreen() {
   const [regCompany, setRegCompany] = useState("");
   const [regSector, setRegSector] = useState(SECTORS[0]);
   const [showSectorPicker, setShowSectorPicker] = useState(false);
+
+  // The sector field stores the translated option string. When the user
+  // switches language, remap the selected value to the new language by its
+  // index so the collapsed dropdown updates immediately instead of keeping the
+  // old language until reopened.
+  useEffect(() => {
+    setRegSector((prev) => {
+      const current = i18n.t("scan.options.sectors", { returnObjects: true }) as string[];
+      if (current.includes(prev)) return prev;
+      for (const lng of ["de", "en", "id"]) {
+        const opts = i18n.getFixedT(lng)("scan.options.sectors", { returnObjects: true }) as string[];
+        const idx = opts.indexOf(prev);
+        if (idx !== -1 && current[idx]) return current[idx];
+      }
+      return prev;
+    });
+  }, [currentLang]);
 
   const inputStyle = {
     borderWidth: 1,

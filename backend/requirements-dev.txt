@@ -1,0 +1,9 @@
+# Dev-only dependencies (NOT needed by the deployed backend).
+# Used by scripts/build_offline_pdfs.py to compress PDFs for the offline web bundle.
+#
+#   pip install -r requirements-dev.txt
+#   python -m scripts.build_offline_pdfs --downscale
+#
+# Ghostscript (if on PATH) is preferred for better compression; PyMuPDF is the
+# pure-Python fallback used when Ghostscript is unavailable.
+pymupdf==1.28.0
