@@ -20,7 +20,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { storage, ScanResult } from "@/lib/storage";
+import { DOCUMENTS } from "@/lib/documents";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+export interface ChatDocument {
+  filename: string;
+  name: string;
+}
 
 const CHAT_HISTORY_KEY = "@ieu_cepa:chat_history";
 
@@ -44,9 +50,13 @@ interface ChatModalProps {
   visible: boolean;
   onClose: () => void;
   onSourcePress?: (source: string) => void;
+  /** Pre-scope the chat to a single document (Knowledge Hub → "Ask AI"). */
+  initialDocument?: ChatDocument | null;
+  /** When set together with initialDocument, this prompt is sent automatically on open. */
+  autoPrompt?: string;
 }
 
-export default function ChatModal({ visible, onClose, onSourcePress }: ChatModalProps) {
+export default function ChatModal({ visible, onClose, onSourcePress, initialDocument, autoPrompt }: ChatModalProps) {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -55,14 +65,28 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [lastScan, setLastScan] = useState<ScanResult | null>(null);
+  const [scopedDoc, setScopedDoc] = useState<ChatDocument | null>(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState("");
   const scrollRef = useRef<ScrollView>(null);
+  // Mirror scopedDoc into a ref so async senders (auto-prompt) always see the latest value.
+  const scopedDocRef = useRef<ChatDocument | null>(null);
+  const autoSentRef = useRef(false);
 
-  const QUICK_ACTIONS = [
-    t("chat.quick1"),
-    t("chat.quick5"),
-    t("chat.quick2"),
-    t("chat.quick4"),
-  ];
+  useEffect(() => {
+    scopedDocRef.current = scopedDoc;
+  }, [scopedDoc]);
+
+  const quickActions: { label: string; message: string }[] = scopedDoc
+    ? [
+        { label: t("chat.docQuickSummary"), message: t("chat.summarizePrompt") },
+        { label: t("chat.docQuickObligations"), message: t("chat.docQuickObligations") },
+        { label: t("chat.docQuickDeadlines"), message: t("chat.docQuickDeadlines") },
+      ]
+    : [t("chat.quick1"), t("chat.quick5"), t("chat.quick2"), t("chat.quick4")].map((a) => ({
+        label: a,
+        message: a,
+      }));
 
   const getInitialMessage = (): Message => ({
     id: "init",
@@ -75,6 +99,9 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
   useEffect(() => {
     if (visible) {
       setInput("");
+      setScopedDoc(initialDocument ?? null);
+      scopedDocRef.current = initialDocument ?? null;
+      autoSentRef.current = false;
       storage.getLastScan().then(setLastScan);
       AsyncStorage.getItem(CHAT_HISTORY_KEY).then((raw) => {
         if (raw) {
@@ -86,6 +113,11 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
           setMessages(loaded);
         } else {
           setMessages([getInitialMessage()]);
+        }
+        // Auto-send (e.g. "summarize this document") once messages are ready
+        if (autoPrompt && (initialDocument ?? null) && !autoSentRef.current) {
+          autoSentRef.current = true;
+          setTimeout(() => sendMessage(autoPrompt), 500);
         }
       });
     }
@@ -140,6 +172,7 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
           history,
           language: i18n.language,
           user_context: userContext,
+          document: scopedDocRef.current?.filename ?? null,
         }),
       });
 
@@ -257,9 +290,9 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
             flexWrap: "wrap",
           }}
         >
-          {QUICK_ACTIONS.map((action) => (
+          {quickActions.map((action) => (
             <TouchableOpacity
-              key={action}
+              key={action.label}
               style={{
                 paddingHorizontal: 12,
                 paddingVertical: 6,
@@ -268,10 +301,10 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
                 borderWidth: 1,
                 borderColor: colors.secondary + "40",
               }}
-              onPress={() => sendMessage(action)}
+              onPress={() => sendMessage(action.message)}
               disabled={loading}
             >
-              <Text style={{ color: colors.secondary, fontSize: 12, fontWeight: "600" }}>{action}</Text>
+              <Text style={{ color: colors.secondary, fontSize: 12, fontWeight: "600" }}>{action.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -463,63 +496,217 @@ export default function ChatModal({ visible, onClose, onSourcePress }: ChatModal
           <View style={{ height: 12 }} />
         </ScrollView>
 
-        {/* Input */}
+        {/* Bottom: document scope chip + input */}
         <View
           style={{
-            flexDirection: "row",
-            alignItems: "flex-end",
-            paddingHorizontal: 16,
-            paddingVertical: 12,
             borderTopWidth: 1,
             borderTopColor: colors.surfaceAlt,
             backgroundColor: colors.surface,
-            paddingBottom: Math.max(insets.bottom + 12, 75)
+            paddingBottom: Math.max(insets.bottom + 12, 75),
           }}
         >
-          <TextInput
+          {/* Active document scope */}
+          {scopedDoc && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginHorizontal: 16,
+                marginTop: 10,
+                backgroundColor: colors.primary + "14",
+                borderWidth: 1,
+                borderColor: colors.primary + "40",
+                borderRadius: 12,
+                paddingHorizontal: 10,
+                paddingVertical: 7,
+              }}
+            >
+              <Ionicons name="document-text" size={13} color={colors.primary} style={{ marginRight: 6 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.primary, fontSize: 10, opacity: 0.8 }}>{t("chat.scopeLabel")}</Text>
+                <Text style={{ color: colors.primary, fontSize: 12, fontWeight: "700" }} numberOfLines={1}>
+                  {scopedDoc.name}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setScopedDoc(null)} hitSlop={8} style={{ marginLeft: 6 }}>
+                <Ionicons name="close-circle" size={18} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Input row */}
+          <View
             style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: colors.inputBorder,
-              borderRadius: 22,
+              flexDirection: "row",
+              alignItems: "flex-end",
               paddingHorizontal: 16,
-              paddingVertical: 10,
-              color: colors.text,
-              fontSize: 14,
-              backgroundColor: colors.inputBackground,
-              marginRight: 10,
-              maxHeight: 100,
+              paddingTop: 10,
             }}
-            placeholder={t("chat.placeholder")}
-            placeholderTextColor={colors.placeholder}
-            value={input}
-            onChangeText={setInput}
-            multiline
-            maxLength={500}
-            onSubmitEditing={() => sendMessage()}
-            returnKeyType="send"
-            submitBehavior="newline"
-          />
-          <TouchableOpacity
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: input.trim() && !loading ? colors.primary : colors.border,
-            }}
-            onPress={() => sendMessage()}
-            disabled={!input.trim() || loading}
           >
-            <Ionicons
-              name="send"
-              size={18}
-              color={input.trim() && !loading ? colors.onPrimary : colors.textSecondary}
+            {/* Pick document */}
+            <TouchableOpacity
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: scopedDoc ? colors.primary + "1A" : colors.surfaceAlt,
+                borderWidth: 1,
+                borderColor: scopedDoc ? colors.primary + "40" : colors.border,
+                marginRight: 8,
+              }}
+              onPress={() => {
+                setPickerQuery("");
+                setPickerVisible(true);
+              }}
+              accessibilityLabel={t("chat.pickDocument")}
+            >
+              <Ionicons
+                name="document-attach-outline"
+                size={20}
+                color={scopedDoc ? colors.primary : colors.textSecondary}
+              />
+            </TouchableOpacity>
+
+            <TextInput
+              style={{
+                flex: 1,
+                borderWidth: 1,
+                borderColor: colors.inputBorder,
+                borderRadius: 22,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                color: colors.text,
+                fontSize: 14,
+                backgroundColor: colors.inputBackground,
+                marginRight: 10,
+                maxHeight: 100,
+              }}
+              placeholder={t("chat.placeholder")}
+              placeholderTextColor={colors.placeholder}
+              value={input}
+              onChangeText={setInput}
+              multiline
+              maxLength={500}
+              onSubmitEditing={() => sendMessage()}
+              returnKeyType="send"
+              submitBehavior="newline"
             />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: input.trim() && !loading ? colors.primary : colors.border,
+              }}
+              onPress={() => sendMessage()}
+              disabled={!input.trim() || loading}
+            >
+              <Ionicons
+                name="send"
+                size={18}
+                color={input.trim() && !loading ? colors.onPrimary : colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
+
+      {/* Document picker */}
+      <Modal
+        visible={pickerVisible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setPickerVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: colors.surface }}>
+          <View
+            style={{
+              backgroundColor: colors.primaryStrong,
+              paddingTop: insets.top + 12,
+              paddingBottom: 14,
+              paddingHorizontal: 16,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ flex: 1, color: colors.onPrimary, fontWeight: "bold", fontSize: 16 }}>
+              {t("chat.pickerTitle")}
+            </Text>
+            <TouchableOpacity
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 17,
+                backgroundColor: colors.onPrimary + "26",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onPress={() => setPickerVisible(false)}
+            >
+              <Ionicons name="close" size={19} color={colors.onPrimary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                backgroundColor: colors.inputBackground,
+                borderRadius: 12,
+                paddingHorizontal: 12,
+                borderWidth: 1,
+                borderColor: colors.inputBorder,
+              }}
+            >
+              <Ionicons name="search" size={16} color={colors.textSecondary} />
+              <TextInput
+                style={{ flex: 1, color: colors.text, fontSize: 14, paddingVertical: 9, paddingHorizontal: 8 }}
+                placeholder={t("chat.pickerSearch")}
+                placeholderTextColor={colors.placeholder}
+                value={pickerQuery}
+                onChangeText={setPickerQuery}
+                autoCorrect={false}
+              />
+            </View>
+          </View>
+
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24 }}>
+            {DOCUMENTS.filter((d) => {
+              const q = pickerQuery.trim().toLowerCase();
+              return !q || d.name.toLowerCase().includes(q) || d.filename.toLowerCase().includes(q);
+            }).map((d) => (
+              <TouchableOpacity
+                key={d.filename}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  backgroundColor: colors.card,
+                  borderRadius: 12,
+                  padding: 12,
+                  marginBottom: 6,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+                onPress={() => {
+                  setScopedDoc({ filename: d.filename, name: d.name });
+                  setPickerVisible(false);
+                }}
+              >
+                <Ionicons name="document-text" size={16} color={colors.primary} style={{ marginRight: 10 }} />
+                <Text style={{ flex: 1, color: colors.text, fontSize: 12, fontWeight: "600" }} numberOfLines={2}>
+                  {d.name}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color={colors.textSecondary} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
     </Modal>
   );
 }
