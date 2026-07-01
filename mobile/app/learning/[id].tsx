@@ -54,7 +54,7 @@ export default function LearningDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const lang = (i18n.language as Lang) ?? "de";
+  const lang = (i18n.language as Lang) ?? "en";
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
 

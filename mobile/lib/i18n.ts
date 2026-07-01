@@ -1231,8 +1231,8 @@ export async function initI18n(): Promise<void> {
 
   await i18n.use(initReactI18next).init({
     resources,
-    lng: savedLanguage ?? "de",
-    fallbackLng: "de",
+    lng: savedLanguage ?? "en",
+    fallbackLng: "en",
     interpolation: {
       escapeValue: false,
     },

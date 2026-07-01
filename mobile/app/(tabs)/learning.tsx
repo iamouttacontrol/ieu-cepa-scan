@@ -73,7 +73,7 @@ const SEED_QUESTIONS: CommunityQuestion[] = [
 
 export default function LearningScreen() {
   const { t, i18n } = useTranslation();
-  const lang = (i18n.language as "de" | "en" | "id") ?? "de";
+  const lang = (i18n.language as "de" | "en" | "id") ?? "en";
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { user } = useAuth();
